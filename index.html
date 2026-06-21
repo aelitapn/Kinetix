@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Журнал тіла</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --canvas:#EDE6E0;
+    --surface:#F7F3EE;
+    --surface-2:#FFFFFF;
+    --ink:#271D22;
+    --ink-soft:#6B5F66;
+    --ink-faint:#A89B9F;
+    --move:#3E1F3B;
+    --move-soft:#EFE3ED;
+    --care:#57624A;
+    --care-soft:#E6EBE0;
+    --signal:#8C6FA8;
+    --signal-soft:#EDE3F3;
+    --border:rgba(39,29,34,0.13);
+    --border-strong:rgba(39,29,34,0.22);
+    --radius:14px;
+    --radius-sm:9px;
+    --shadow:0 1px 2px rgba(39,29,34,0.06), 0 6px 18px rgba(39,29,34,0.05);
+    --font-display:'Bricolage Grotesque',sans-serif;
+    --font-body:'Manrope',sans-serif;
+    --font-mono:'Space Mono',monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--canvas);
+    color:var(--ink);
+    font-family:var(--font-body);
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  h1,h2,h3,.display{font-family:var(--font-display);font-weight:700;letter-spacing:-0.01em;}
+  .mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums;}
+  button{font-family:inherit;cursor:pointer;}
+  input,select,textarea{font-family:inherit;font-size:15px;}
+  a{color:inherit;}
+
+  #pinGate{
+    position:fixed;inset:0;background:var(--canvas);
+    display:flex;align-items:center;justify-content:center;
+    z-index:200;flex-direction:column;gap:22px;padding:24px;
+  }
+  #pinGate.hidden{display:none;}
+  .pin-ring{width:64px;height:64px;}
+  .pin-box{display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;max-width:280px;}
+  .pin-box h1{font-size:22px;margin:0;}
+  .pin-box input{
+    width:100%;text-align:center;letter-spacing:8px;font-size:24px;
+    padding:14px 10px;border-radius:var(--radius-sm);border:1.5px solid var(--border-strong);
+    background:var(--surface-2);color:var(--ink);font-family:var(--font-mono);
+  }
+  .pin-box input:focus{outline:2px solid var(--move);outline-offset:1px;}
+  .pin-error{color:var(--signal);font-size:13px;min-height:16px;}
+  .btn{
+    border:none;border-radius:var(--radius-sm);padding:12px 20px;font-weight:600;font-size:14.5px;
+    background:var(--move);color:#fff;transition:transform .12s ease, opacity .12s ease;
+  }
+  .btn:active{transform:scale(0.97);}
+  .btn:focus-visible{outline:2px solid var(--ink);outline-offset:2px;}
+  .btn.block{width:100%;}
+  .btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--border-strong);}
+  .btn.care{background:var(--care);}
+  .btn.signal{background:var(--signal);}
+  .btn.sm{padding:8px 14px;font-size:13px;}
+  .btn.icon{padding:8px 11px;}
+  .btn[disabled]{opacity:.45;pointer-events:none;}
+
+  #app{display:none;min-height:100vh;}
+  #app.shown{display:block;}
+  .shell{display:flex;min-height:100vh;}
+  nav.sidenav{display:none;}
+  main#view{
+    flex:1;padding:20px 16px 90px;max-width:760px;margin:0 auto;width:100%;
+  }
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;gap:10px;
+  }
+  .topbar .brand{font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);}
+
+  nav.bottomnav{
+    position:fixed;bottom:0;left:0;right:0;background:var(--surface-2);
+    border-top:1px solid var(--border);display:flex;justify-content:space-around;
+    padding:8px 4px calc(8px + env(safe-area-inset-bottom));z-index:50;
+  }
+  nav.bottomnav button{
+    background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:4px;
+    color:var(--ink-faint);font-size:11px;padding:6px 8px;border-radius:10px;flex:1;
+  }
+  nav.bottomnav button .dot{width:7px;height:7px;border-radius:50%;background:transparent;}
+  nav.bottomnav button.active{color:var(--ink);}
+  nav.bottomnav button.active .dot{background:var(--move);}
+
+  @media (min-width:880px){
+    main#view{padding:36px 40px 40px;max-width:920px;margin:0;}
+    nav.bottomnav{display:none;}
+    nav.sidenav{
+      display:flex;flex-direction:column;width:220px;flex-shrink:0;
+      background:var(--surface-2);border-right:1px solid var(--border);
+      padding:28px 18px;gap:4px;
+    }
+    nav.sidenav .brand{font-family:var(--font-display);font-size:18px;margin-bottom:24px;}
+    nav.sidenav button{
+      text-align:left;background:none;border:none;padding:10px 12px;border-radius:var(--radius-sm);
+      color:var(--ink-soft);font-size:14.5px;font-weight:600;display:flex;align-items:center;gap:10px;
+    }
+    nav.sidenav button.active{background:var(--move-soft);color:var(--move);}
+    .shell{max-width:1180px;margin:0 auto;}
+  }
+
+  .tick-divider{
+    height:14px;display:flex;align-items:flex-end;gap:5px;margin:22px 0;opacity:.55;
+  }
+  .tick-divider span{width:1px;background:var(--ink-faint);height:6px;}
+  .tick-divider span:nth-child(5n){height:11px;}
+
+  .card{
+    background:var(--surface-2);border-radius:var(--radius);padding:16px;
+    box-shadow:var(--shadow);margin-bottom:12px;
+  }
+  .section-title{
+    font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-soft);
+    margin:24px 0 10px;font-weight:700;
+  }
+
+  .ring-wrap{position:relative;display:inline-flex;align-items:center;justify-content:center;}
+  .ring-wrap .ring-center{
+    position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  }
+  .ring-num{font-family:var(--font-mono);font-weight:700;line-height:1;}
+  .ring-label{font-size:10px;color:var(--ink-soft);margin-top:2px;}
+
+  .today-head{display:flex;align-items:center;gap:16px;margin-bottom:6px;}
+  .progress-bar{height:6px;border-radius:4px;background:var(--border);overflow:hidden;margin:14px 0 4px;}
+  .progress-bar i{display:block;height:100%;background:var(--signal);transition:width .3s ease;}
+  .plan-item{
+    display:flex;align-items:center;gap:12px;padding:14px 4px;border-bottom:1px solid var(--border);flex-wrap:wrap;
+  }
+  .plan-item:last-child{border-bottom:none;}
+  .plan-check{
+    width:24px;height:24px;border-radius:50%;border:1.8px solid var(--border-strong);flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;background:var(--surface-2);
+  }
+  .plan-check.done{border-color:transparent;}
+  .plan-check.done.move{background:var(--move);}
+  .plan-check.done.care{background:var(--care);}
+  .plan-item .meta{flex:1;min-width:140px;}
+  .plan-item .meta .name{font-weight:600;font-size:14.5px;}
+  .plan-item .meta .type{font-size:12px;color:var(--ink-soft);margin-top:1px;}
+  .tag{font-size:10.5px;padding:3px 8px;border-radius:20px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;}
+  .tag.move{background:var(--move-soft);color:var(--move);}
+  .tag.care{background:var(--care-soft);color:var(--care);}
+  .empty-state{text-align:center;padding:40px 16px;color:var(--ink-soft);}
+  .empty-state .display{font-size:17px;color:var(--ink);margin-bottom:6px;}
+
+  .row-list .row{display:flex;align-items:center;gap:12px;padding:13px 4px;border-bottom:1px solid var(--border);}
+  .row-list .row:last-child{border-bottom:none;}
+  .row-thumb{width:46px;height:46px;border-radius:10px;object-fit:cover;background:var(--canvas);flex-shrink:0;}
+  .row .meta{flex:1;min-width:0;}
+  .row .meta .name{font-weight:600;font-size:14.5px;}
+  .row .meta .sub{font-size:12px;color:var(--ink-soft);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .row-actions{display:flex;gap:6px;}
+  .icon-btn{background:none;border:none;color:var(--ink-soft);font-size:13px;padding:6px 8px;border-radius:8px;}
+  .icon-btn:hover{background:var(--canvas);}
+  .gear-btn{font-size:20px;padding:9px 13px;border-radius:11px;background:var(--canvas);color:var(--ink);}
+  .search-input{
+    width:100%;padding:11px 14px;border-radius:var(--radius-sm);border:1.5px solid var(--border);
+    background:var(--surface-2);margin-bottom:12px;
+  }
+  .fab-row{display:flex;justify-content:flex-end;margin:14px 0 4px;}
+
+  .modal-backdrop{
+    position:fixed;inset:0;background:rgba(39,29,34,.4);display:none;align-items:flex-end;justify-content:center;z-index:100;
+  }
+  .modal-backdrop.shown{display:flex;}
+  .modal{
+    background:var(--surface-2);border-radius:18px 18px 0 0;padding:22px 20px calc(22px + env(safe-area-inset-bottom));
+    width:100%;max-width:480px;max-height:88vh;overflow-y:auto;
+  }
+  @media (min-width:880px){
+    .modal-backdrop{align-items:center;}
+    .modal{border-radius:18px;max-height:84vh;}
+  }
+  .modal h2{font-size:18px;margin:0 0 16px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12.5px;font-weight:700;color:var(--ink-soft);margin-bottom:6px;text-transform:uppercase;letter-spacing:.03em;}
+  .field input[type=text],.field input[type=number],.field input[type=url],.field input[type=date],.field input[type=file],.field textarea,.field select{
+    width:100%;padding:10px 12px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:var(--canvas);
+  }
+  .field textarea{resize:vertical;min-height:60px;}
+  .seg{display:flex;gap:8px;}
+  .seg button{
+    flex:1;padding:10px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:var(--canvas);
+    color:var(--ink-soft);font-weight:600;font-size:13.5px;
+  }
+  .seg button.active{background:var(--move);color:#fff;border-color:var(--move);}
+  .modal-actions{display:flex;gap:10px;margin-top:18px;}
+  .modal-actions .btn{flex:1;}
+
+  .check-row{display:flex;align-items:center;gap:9px;font-weight:600;font-size:14.5px;margin-bottom:12px;}
+  .check-row input[type=checkbox]{width:19px;height:19px;accent-color:var(--signal);}
+
+  .stepper{display:flex;align-items:center;gap:14px;}
+  .stepper button{
+    width:38px;height:38px;border-radius:50%;border:1.5px solid var(--border-strong);background:var(--surface-2);
+    font-size:18px;font-weight:700;color:var(--ink);display:flex;align-items:center;justify-content:center;
+  }
+  .stepper-val{font-size:20px;font-weight:700;min-width:24px;text-align:center;}
+  .icon-input-row{display:flex;gap:10px;align-items:center;}
+  .icon-input-row input{flex:1;}
+  .icon-preview{width:46px;height:46px;border-radius:10px;background:var(--canvas);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;overflow:hidden;}
+  .icon-preview img{width:100%;height:100%;object-fit:cover;}
+
+  .builder-item{background:var(--canvas);border-radius:var(--radius-sm);padding:12px;margin-bottom:8px;}
+  .builder-item .top{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+  .builder-item .top .name{font-weight:600;flex:1;font-size:14px;}
+  .builder-item .inputs{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .mini-field{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-soft);}
+  .mini-field input{width:64px;padding:6px 8px;border-radius:7px;border:1.3px solid var(--border);background:var(--surface-2);}
+  .picker-results{max-height:160px;overflow-y:auto;border:1.5px solid var(--border);border-radius:var(--radius-sm);margin-top:6px;}
+  .picker-results .prow{padding:10px 12px;border-bottom:1px solid var(--border);font-size:14px;display:flex;justify-content:space-between;align-items:center;}
+  .picker-results .prow:last-child{border-bottom:none;}
+  .add-row{display:flex;gap:10px;margin:14px 0;}
+
+  .day-block{margin-bottom:18px;}
+  .day-block h3{font-size:14.5px;margin:0 0 8px;display:flex;align-items:center;gap:8px;}
+  .day-block h3 .badge{font-family:var(--font-mono);font-size:11px;color:var(--ink-faint);}
+
+  #execScreen{
+    position:fixed;inset:0;background:var(--move);color:#fff;z-index:300;
+    display:none;flex-direction:column;align-items:center;justify-content:space-between;
+    padding:28px 22px calc(28px + env(safe-area-inset-bottom));
+  }
+  #execScreen.rest{background:var(--ink);}
+  #execScreen.shown{display:flex;}
+  .exec-progress-full{position:absolute;top:0;left:0;right:0;height:6px;background:rgba(255,255,255,.18);}
+  .exec-progress-full i{display:block;height:100%;background:#fff;transition:width .3s ease;}
+  .exec-top{width:100%;display:flex;justify-content:space-between;align-items:center;margin-top:8px;}
+  .exec-top button{background:rgba(255,255,255,.14);border:none;color:#fff;border-radius:10px;padding:8px 12px;font-size:13px;}
+  .exec-step-count{font-size:13px;opacity:.85;}
+  .exec-kicker{font-size:12px;letter-spacing:.08em;text-transform:uppercase;opacity:.7;margin-bottom:6px;}
+  .exec-mid{display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px;}
+  .exec-gif{width:min(72vw,260px);height:min(72vw,260px);border-radius:20px;object-fit:cover;background:rgba(255,255,255,.08);}
+  .exec-name{font-size:24px;}
+  .exec-note{font-size:13.5px;opacity:.75;max-width:280px;}
+  .exec-big-num{font-family:var(--font-mono);font-size:64px;font-weight:700;line-height:1;}
+  .exec-unit{font-size:12.5px;opacity:.7;}
+  .exec-bottom{display:flex;gap:12px;width:100%;max-width:380px;}
+  .exec-bottom .btn{flex:1;background:rgba(255,255,255,.16);color:#fff;}
+  .exec-bottom .btn.primary{background:#fff;color:var(--signal);}
+
+  .meas-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .progress-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;}
+  .progress-card{background:var(--surface-2);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);}
+  .pc-photo{position:relative;aspect-ratio:3/4;background:var(--canvas);}
+  .pc-photo img{width:100%;height:100%;object-fit:cover;display:block;}
+  .pc-date{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(transparent,rgba(0,0,0,.6));color:#fff;font-size:11px;padding:6px 8px;font-family:var(--font-mono);}
+  .pc-noPhoto{aspect-ratio:3/4;display:flex;align-items:center;justify-content:center;background:var(--canvas);color:var(--ink-soft);font-family:var(--font-mono);font-size:13px;}
+  .pc-vals{padding:10px;display:flex;flex-wrap:wrap;gap:6px;}
+  .pc-chip{background:var(--canvas);border-radius:7px;padding:4px 8px;font-size:11.5px;display:flex;gap:4px;}
+  .pc-chip .k{color:var(--ink-soft);}
+  .pc-chip .v{font-weight:700;}
+  .pc-empty{font-size:12px;color:var(--ink-faint);padding:10px;display:block;}
+  .compare-selects{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+  .compare-selects select{flex:1;padding:8px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--canvas);}
+  .compare-selects span{color:var(--ink-soft);}
+  .compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .compare-col img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:10px;display:block;}
+  .compare-vals{font-size:12px;margin-top:8px;line-height:1.7;color:var(--ink-soft);}
+  .compare-vals b{color:var(--ink);}
+
+  .toast{
+    position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;
+    padding:10px 18px;border-radius:30px;font-size:13.5px;z-index:400;opacity:0;pointer-events:none;transition:opacity .25s ease;
+    max-width:86vw;text-align:center;
+  }
+  .toast.shown{opacity:1;}
+  @media (min-width:880px){.toast{bottom:24px;}}
+</style>
+</head>
+<body>
+
+<div id="pinGate">
+  <svg class="pin-ring" viewBox="0 0 64 64"><circle cx="32" cy="32" r="27" fill="none" stroke="#8C6FA8" stroke-width="5" stroke-dasharray="170 170" stroke-linecap="round" transform="rotate(-90 32 32)"/></svg>
+  <div class="pin-box">
+    <h1 class="display">Журнал тіла</h1>
+    <input id="pinInput" type="password" inputmode="numeric" maxlength="8" placeholder="••••">
+    <div class="pin-error" id="pinError"></div>
+    <button class="btn block" onclick="tryPin()">Увійти</button>
+  </div>
+</div>
+
+<div id="app">
+  <div class="shell">
+    <nav class="sidenav" id="sidenav"></nav>
+    <main id="view"></main>
+  </div>
+  <nav class="bottomnav" id="bottomnav"></nav>
+</div>
+
+<div class="modal-backdrop" id="modalBackdrop"><div class="modal" id="modalBody"></div></div>
+
+<div id="execScreen"></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= CONFIG ================= */
+const SUPABASE_URL = "https://sbymgniaktlrjlqqlipv.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNieW1nbmlha3RscmpscXFsaXB2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwMTU2ODgsImV4cCI6MjA5NzU5MTY4OH0.4nd1jpwX1IbgTkFAIDP7TrOJW9oB4aKR1W6B94Y7uh8";
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const DAY_NAMES = ["Понеділок","Вівторок","Середа","Четвер","П'ятниця","Субота","Неділя"];
+const DAY_SHORT = ["Пн","Вт","Ср","Чт","Пт","Сб","Нд"];
+const NAV = [
+  {id:"home", label:"Сьогодні"},
+  {id:"workouts", label:"Тренування"},
+  {id:"schedule", label:"Розклад"},
+  {id:"progress", label:"Прогрес"},
+];
+const KICKER_LABELS = {rest:"Відпочинок", rest_round:"Відпочинок між сетами", warmup:"Розминка", cooldown:"Заминка"};
+
+/* ================= STATE ================= */
+let state = {
+  view: "home",
+  exercises: [],
+  careActions: [],
+  workouts: [],
+  scheduleItems: [],
+  completions: [],
+  progressEntries: [],
+  editingWorkout: null,
+  exec: null,
+  showExercisePicker: false,
+};
+
+/* ================= HELPERS ================= */
+function todayDate(){ return new Date(); }
+function toDateStr(d){
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,"0"), day=String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
+function isoDay(d){ return (d.getDay()+6)%7; }
+function fmtShortDate(str){
+  const d = new Date(str+"T00:00:00");
+  return d.toLocaleDateString("uk-UA",{day:"2-digit",month:"2-digit",year:"numeric"});
+}
+function fmtDuration(sec){
+  if(sec < 60) return `${sec} с`;
+  return `${Math.round(sec/60)} хв`;
+}
+function calcWorkoutSeconds(workout){
+  let hasReps=false, total=0;
+  (workout.items||[]).forEach(it=>{
+    const occ = it.repeat_count||1;
+    const base = it.type==='time' ? (it.duration_seconds||0) : ((it.reps||0)*3);
+    if(it.type==='reps') hasReps=true;
+    total += occ*(base + (it.rest_after_seconds||0));
+  });
+  total *= (workout.rounds||1);
+  if((workout.rounds||1) > 1) total += (workout.rounds-1)*(workout.rest_between_rounds_seconds||0);
+  if(workout.warmup_enabled) total += (workout.warmup_seconds||0);
+  if(workout.cooldown_enabled) total += (workout.cooldown_seconds||0);
+  return {seconds: total, approx: hasReps};
+}
+function workoutIconHtml(icon, faIcon){
+  if(icon && icon.startsWith('http')) return `<img class="row-thumb" src="${icon}">`;
+  if(icon) return `<div class="row-thumb" style="display:flex;align-items:center;justify-content:center;font-size:22px">${icon}</div>`;
+  return `<div class="row-thumb" style="display:flex;align-items:center;justify-content:center;color:var(--move);font-size:18px">${faIcon||'◐'}</div>`;
+}
+function toast(msg){
+  const t=document.getElementById("toast");
+  t.textContent=msg; t.classList.add("shown");
+  clearTimeout(window.__toastTimer);
+  window.__toastTimer=setTimeout(()=>t.classList.remove("shown"),2600);
+}
+function ringSVG({size=64, stroke=7, percent=0, color="#8C6FA8", track="rgba(0,0,0,.08)"}){
+  const r=(size-stroke)/2, c=2*Math.PI*r, off=c*(1-Math.min(percent,1));
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+    <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${track}" stroke-width="${stroke}"/>
+    <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${color}" stroke-width="${stroke}"
+      stroke-dasharray="${c}" stroke-dashoffset="${off}" stroke-linecap="round" transform="rotate(-90 ${size/2} ${size/2})"
+      style="transition:stroke-dashoffset .3s ease"/>
+  </svg>`;
+}
+function openModal(html){
+  document.getElementById("modalBody").innerHTML = html;
+  document.getElementById("modalBackdrop").classList.add("shown");
+}
+function closeModal(){
+  document.getElementById("modalBackdrop").classList.remove("shown");
+}
+document.getElementById("modalBackdrop").addEventListener("click", (e)=>{
+  if(e.target.id==="modalBackdrop") closeModal();
+});
+
+/* ================= PIN GATE ================= */
+async function tryPin(){
+  const val = document.getElementById("pinInput").value.trim();
+  const errEl = document.getElementById("pinError");
+  if(!val){ errEl.textContent="Введи PIN"; return; }
+  const {data, error} = await sb.from("app_settings").select("pin_code").eq("id",1).single();
+  if(error){ errEl.textContent="Помилка з'єднання з базою"; console.error(error); return; }
+  if(data.pin_code === val){
+    document.getElementById("pinGate").classList.add("hidden");
+    document.getElementById("app").classList.add("shown");
+    boot();
+  } else {
+    errEl.textContent = "Невірний PIN";
+  }
+}
+document.getElementById("pinInput").addEventListener("keydown",(e)=>{ if(e.key==="Enter") tryPin(); });
+
+/* ================= BOOT & DATA ================= */
+async function boot(){
+  renderNav();
+  await loadAll();
+  render();
+}
+async function loadAll(){
+  const [ex, care, wk, sch, comp, prog] = await Promise.all([
+    sb.from("exercises").select("*").order("name"),
+    sb.from("care_actions").select("*").order("name"),
+    sb.from("workouts").select("*, workout_items(*, exercises(name,type))").order("name"),
+    sb.from("schedule_items").select("*").order("order_index"),
+    sb.from("daily_completions").select("*"),
+    sb.from("progress_entries").select("*").order("entry_date",{ascending:false}),
+  ]);
+  state.exercises = ex.data || [];
+  state.careActions = care.data || [];
+  state.workouts = (wk.data || []).map(w => ({
+    ...w,
+    items: (w.workout_items||[]).map(it=>({
+      id: it.id, exercise_id: it.exercise_id, order_index: it.order_index,
+      name: it.exercises?.name, type: it.exercises?.type,
+      duration_seconds: it.duration_seconds, reps: it.reps,
+      rest_after_seconds: it.rest_after_seconds, repeat_count: it.repeat_count||1
+    })).sort((a,b)=>a.order_index-b.order_index)
+  }));
+  state.scheduleItems = sch.data || [];
+  state.completions = comp.data || [];
+  state.progressEntries = prog.data || [];
+}
+
+/* ================= NAV ================= */
+function navActive(id){
+  if(id==='workouts') return ['workouts','workoutEditor','library'].includes(state.view);
+  return state.view===id;
+}
+function renderNav(){
+  document.getElementById("sidenav").innerHTML =
+    `<div class="brand">Журнал тіла</div>` +
+    NAV.map(n=>`<button class="${navActive(n.id)?'active':''}" onclick="goView('${n.id}')">${n.label}</button>`).join("");
+  document.getElementById("bottomnav").innerHTML =
+    NAV.map(n=>`<button class="${navActive(n.id)?'active':''}" onclick="goView('${n.id}')"><span class="dot"></span>${n.label}</button>`).join("");
+}
+function goView(v){ state.view=v; render(); }
+function render(){
+  renderNav();
+  const map = {home:renderHome, workouts:renderWorkouts, workoutEditor:renderWorkoutEditor, library:renderLibrary, schedule:renderSchedule, progress:renderProgress};
+  document.getElementById("view").innerHTML = map[state.view] ? map[state.view]() : "";
+}
+
+/* ================= HOME ================= */
+function todaysScheduleItems(){
+  const d = isoDay(todayDate());
+  return state.scheduleItems.filter(s=>s.day_of_week===d).sort((a,b)=>a.order_index-b.order_index);
+}
+function isCompletedToday(scheduleItemId){
+  const t = toDateStr(todayDate());
+  return state.completions.some(c=>c.completion_date===t && c.schedule_item_id===scheduleItemId);
+}
+function computeStreak(){
+  const dates = [...new Set(state.completions.map(c=>c.completion_date))].sort().reverse();
+  if(dates.length===0) return 0;
+  const today = toDateStr(todayDate());
+  let cursor = new Date(todayDate());
+  if(!dates.includes(today)) cursor.setDate(cursor.getDate()-1);
+  let streak=0;
+  while(dates.includes(toDateStr(cursor))){
+    streak++; cursor.setDate(cursor.getDate()-1);
+  }
+  return streak;
+}
+function renderHome(){
+  const items = todaysScheduleItems();
+  const done = items.filter(i=>isCompletedToday(i.id)).length;
+  const pct = items.length ? Math.round(done/items.length*100) : 0;
+  const streak = computeStreak();
+  const dateLabel = todayDate().toLocaleDateString("uk-UA",{weekday:"long", day:"numeric", month:"long"});
+
+  let list = "";
+  if(items.length===0){
+    list = `<div class="empty-state"><div class="display">На сьогодні нічого не заплановано</div>На вкладці «Розклад» можна додати тренування чи доглядові дії на цей день тижня.</div>`;
+  } else {
+    list = items.map(it=>{
+      const isWorkout = it.item_type==="workout";
+      const ref = isWorkout ? state.workouts.find(w=>w.id===it.workout_id) : state.careActions.find(c=>c.id===it.care_action_id);
+      const checked = isCompletedToday(it.id);
+      const cls = isWorkout ? "move" : "care";
+      const name = ref ? ref.name : "(видалено)";
+      let sub = "доглядова дія";
+      if(isWorkout && ref){
+        const calc = calcWorkoutSeconds(ref);
+        sub = `${ref.items.length} вправ · ${calc.approx?'≈ ':''}${fmtDuration(calc.seconds)}`;
+      }
+      return `<div class="plan-item">
+        <div class="plan-check ${checked?'done '+cls:''}" onclick="onCheckboxTap('${it.id}',${checked})">${checked?'✓':''}</div>
+        <div class="meta"><div class="name">${name}</div><div class="type">${sub}</div></div>
+        ${isWorkout ? `<button class="btn sm" onclick="startFromPlan('${it.id}')">Почати</button>` : ''}
+      </div>`;
+    }).join("");
+  }
+
+  return `
+    <div class="topbar"><span class="brand">${dateLabel}</span></div>
+    <div class="today-head">
+      <div class="ring-wrap">
+        ${ringSVG({percent: Math.min(streak/30,1), color:"#8C6FA8"})}
+        <div class="ring-center"><div class="ring-num" style="font-size:18px">${streak}</div></div>
+      </div>
+      <div><div class="display" style="font-size:17px">днів поспіль</div><div style="color:var(--ink-soft);font-size:13px">будь-яка виконана дія з плану</div></div>
+    </div>
+    <div class="progress-bar"><i style="width:${pct}%"></i></div>
+    <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:6px">${done} з ${items.length} виконано сьогодні</div>
+    <div class="tick-divider">${"<span></span>".repeat(40)}</div>
+    <div class="card row-list">${list}</div>
+  `;
+}
+async function onCheckboxTap(scheduleItemId, checked){
+  await toggleCompletion(scheduleItemId, checked);
+  render();
+}
+function startFromPlan(scheduleItemId){
+  const item = state.scheduleItems.find(s=>s.id===scheduleItemId);
+  const workout = state.workouts.find(w=>w.id===item.workout_id);
+  if(!workout){ toast("Тренування не знайдено"); return; }
+  startExecution(workout, scheduleItemId);
+}
+async function toggleCompletion(scheduleItemId, currentlyChecked){
+  const t = toDateStr(todayDate());
+  if(currentlyChecked){
+    await sb.from("daily_completions").delete().eq("completion_date",t).eq("schedule_item_id",scheduleItemId);
+    state.completions = state.completions.filter(c=>!(c.completion_date===t && c.schedule_item_id===scheduleItemId));
+  } else {
+    const {data} = await sb.from("daily_completions").insert({completion_date:t, schedule_item_id:scheduleItemId}).select().single();
+    if(data) state.completions.push(data);
+  }
+}
+
+/* ================= LIBRARY (exercises + care) ================= */
+function renderLibrary(){
+  const tab = state.libraryTab || 'exercises';
+  return `
+    <div class="topbar"><button class="icon-btn" onclick="goView('workouts')">← Тренування</button></div>
+    <div class="seg" style="margin-bottom:16px">
+      <button class="${tab==='exercises'?'active':''}" onclick="state.libraryTab='exercises'; render()">Вправи</button>
+      <button class="${tab==='care'?'active':''}" onclick="state.libraryTab='care'; render()">Догляд</button>
+    </div>
+    ${tab==='exercises' ? renderExercisesList() : renderCareList()}
+  `;
+}
+function renderExercisesList(){
+  const q = state.exSearch || "";
+  const filtered = state.exercises.filter(e=>e.name.toLowerCase().includes(q.toLowerCase()));
+  return `
+    <input class="search-input" placeholder="Пошук вправи" value="${q}" oninput="state.exSearch=this.value; render()">
+    <div class="card row-list">
+      ${filtered.length? filtered.map(e=>`
+        <div class="row">
+          ${e.gif_url ? `<img class="row-thumb" src="${e.gif_url}">` : `<div class="row-thumb"></div>`}
+          <div class="meta"><div class="name">${e.name}</div><div class="sub">${e.type==='time'?'на час':'на повторення'}${e.note?' · '+e.note:''}</div></div>
+          <div class="row-actions">
+            <button class="icon-btn" onclick="openExerciseModal('${e.id}')">Редаг.</button>
+            <button class="icon-btn" onclick="deleteExercise('${e.id}')">Вид.</button>
+          </div>
+        </div>`).join("") : `<div class="empty-state">Поки немає жодної вправи</div>`}
+    </div>
+    <div class="fab-row"><button class="btn" onclick="openExerciseModal()">+ Додати вправу</button></div>
+  `;
+}
+function renderCareList(){
+  return `
+    <div class="card row-list">
+      ${state.careActions.length? state.careActions.map(c=>`
+        <div class="row">
+          <div class="row-thumb" style="display:flex;align-items:center;justify-content:center;color:var(--care);font-size:18px">●</div>
+          <div class="meta"><div class="name">${c.name}</div><div class="sub">${c.note||''}</div></div>
+          <div class="row-actions">
+            <button class="icon-btn" onclick="openCareModal('${c.id}')">Редаг.</button>
+            <button class="icon-btn" onclick="deleteCare('${c.id}')">Вид.</button>
+          </div>
+        </div>`).join("") : `<div class="empty-state">Поки немає доглядових дій</div>`}
+    </div>
+    <div class="fab-row"><button class="btn care" onclick="openCareModal()">+ Додати дію</button></div>
+  `;
+}
+function openExerciseModal(id){
+  const ex = id ? state.exercises.find(e=>e.id===id) : {name:"",gif_url:"",note:"",type:"time"};
+  openModal(`
+    <h2>${id?'Редагувати вправу':'Нова вправа'}</h2>
+    <div class="field"><label>Назва</label><input id="f_name" type="text" value="${ex.name||''}"></div>
+    <div class="field"><label>Посилання на гіфку</label><input id="f_gif" type="url" value="${ex.gif_url||''}"></div>
+    <div class="field"><label>Нотатка / нюанс</label><textarea id="f_note">${ex.note||''}</textarea></div>
+    <div class="field"><label>Тип</label>
+      <div class="seg">
+        <button id="seg_time" class="${ex.type==='time'?'active':''}" onclick="setExType('time')">На час</button>
+        <button id="seg_reps" class="${ex.type==='reps'?'active':''}" onclick="setExType('reps')">На повторення</button>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn ghost" onclick="closeModal()">Скасувати</button>
+      <button class="btn" onclick="saveExercise('${id||''}')">Зберегти</button>
+    </div>
+  `);
+  state.tmpExType = ex.type;
+}
+function setExType(t){
+  state.tmpExType = t;
+  document.getElementById("seg_time").classList.toggle("active", t==="time");
+  document.getElementById("seg_reps").classList.toggle("active", t==="reps");
+}
+async function saveExercise(id){
+  const payload = {
+    name: document.getElementById("f_name").value.trim(),
+    gif_url: document.getElementById("f_gif").value.trim() || null,
+    note: document.getElementById("f_note").value.trim() || null,
+    type: state.tmpExType || "time",
+  };
+  if(!payload.name){ toast("Вкажи назву"); return; }
+  const {error} = id ? await sb.from("exercises").update(payload).eq("id",id) : await sb.from("exercises").insert(payload);
+  if(error){ toast("Не вдалося зберегти: "+error.message); return; }
+  closeModal();
+  await loadAll();
+  render();
+  toast("Збережено");
+}
+async function deleteExercise(id){
+  if(!confirm("Видалити цю вправу?")) return;
+  const {error} = await sb.from("exercises").delete().eq("id",id);
+  if(error){ toast("Цю вправу неможливо видалити — вона використовується в тренуванні. Спочатку прибери її звідти."); return; }
+  await loadAll(); render();
+}
+function openCareModal(id){
+  const c = id ? state.careActions.find(c=>c.id===id) : {name:"",note:""};
+  openModal(`
+    <h2>${id?'Редагувати дію':'Нова доглядова дія'}</h2>
+    <div class="field"><label>Назва</label><input id="f_cname" type="text" value="${c.name||''}"></div>
+    <div class="field"><label>Нотатка</label><textarea id="f_cnote">${c.note||''}</textarea></div>
+    <div class="modal-actions">
+      <button class="btn ghost" onclick="closeModal()">Скасувати</button>
+      <button class="btn care" onclick="saveCare('${id||''}')">Зберегти</button>
+    </div>
+  `);
+}
+async function saveCare(id){
+  const payload = { name: document.getElementById("f_cname").value.trim(), note: document.getElementById("f_cnote").value.trim()||null };
+  if(!payload.name){ toast("Вкажи назву"); return; }
+  const {error} = id ? await sb.from("care_actions").update(payload).eq("id",id) : await sb.from("care_actions").insert(payload);
+  if(error){ toast("Не вдалося зберегти: "+error.message); return; }
+  closeModal(); await loadAll(); render(); toast("Збережено");
+}
+async function deleteCare(id){
+  if(!confirm("Видалити цю дію?")) return;
+  await sb.from("care_actions").delete().eq("id",id);
+  await loadAll(); render();
+}
+
+/* ================= WORKOUTS (library) ================= */
+function renderWorkouts(){
+  return `
+    <div class="topbar"><h2 class="display">Тренування</h2><button class="icon-btn gear-btn" onclick="goView('library')" title="Вправи та догляд">⚙</button></div>
+    <div class="card row-list">
+      ${state.workouts.length? state.workouts.map(w=>{
+        const calc = calcWorkoutSeconds(w);
+        return `<div class="row">
+          ${workoutIconHtml(w.icon)}
+          <div class="meta"><div class="name">${w.name}</div><div class="sub">${w.items.length} вправ · ${calc.approx?'≈ ':''}${fmtDuration(calc.seconds)} · ${w.rounds} ${w.rounds===1?'сет':'сети'}</div></div>
+          <div class="row-actions">
+            <button class="icon-btn" onclick="openWorkoutEditor('${w.id}')">Редаг.</button>
+            <button class="icon-btn" onclick="deleteWorkout('${w.id}')">Вид.</button>
+          </div>
+        </div>`;
+      }).join("") : `<div class="empty-state">Поки немає жодного тренування</div>`}
+    </div>
+    <div class="fab-row"><button class="btn" onclick="openWorkoutEditor()">+ Нове тренування</button></div>
+  `;
+}
+async function deleteWorkout(id){
+  if(!confirm("Видалити тренування? Воно також зникне з розкладу.")) return;
+  await sb.from("workouts").delete().eq("id",id);
+  await loadAll(); render();
+}
+
+function openWorkoutEditor(id){
+  if(id){
+    const w = state.workouts.find(w=>w.id===id);
+    state.editingWorkout = {
+      id:w.id, name:w.name, rounds:w.rounds, items: w.items.map(it=>({...it})),
+      icon: w.icon||"", warmup_enabled: w.warmup_enabled||false, warmup_seconds: w.warmup_seconds||60, warmup_note: w.warmup_note||"",
+      cooldown_enabled: w.cooldown_enabled||false, cooldown_seconds: w.cooldown_seconds||60, cooldown_note: w.cooldown_note||"",
+      rest_between_rounds_seconds: w.rest_between_rounds_seconds||0
+    };
+  } else {
+    state.editingWorkout = {
+      id:null, name:"", rounds:1, items:[], icon:"",
+      warmup_enabled:false, warmup_seconds:60, warmup_note:"",
+      cooldown_enabled:false, cooldown_seconds:60, cooldown_note:"",
+      rest_between_rounds_seconds:0
+    };
+  }
+  state.exPickerQuery = "";
+  state.showExercisePicker = false;
+  state.view = "workoutEditor";
+  render();
+}
+function changeRounds(delta){
+  state.editingWorkout.rounds = Math.max(1, (state.editingWorkout.rounds||1)+delta);
+  render();
+}
+function renderWorkoutEditor(){
+  const ew = state.editingWorkout;
+  const q = state.exPickerQuery || "";
+  const results = q ? state.exercises.filter(e=>e.name.toLowerCase().includes(q.toLowerCase())) : [];
+  const calc = calcWorkoutSeconds(ew);
+  return `
+    <div class="topbar"><h2 class="display">${ew.id?'Редагувати тренування':'Нове тренування'}</h2></div>
+    <div class="field"><label>Назва тренування</label><input id="w_name" type="text" value="${ew.name}" oninput="state.editingWorkout.name=this.value"></div>
+
+    <div class="field"><label>Іконка (емодзі зі своєї клавіатури або посилання на картинку)</label>
+      <div class="icon-input-row">
+        ${ew.icon && ew.icon.startsWith('http') ? `<div class="icon-preview"><img src="${ew.icon}"></div>` : `<div class="icon-preview">${ew.icon||'—'}</div>`}
+        <input type="text" value="${ew.icon||''}" placeholder="💪 або https://..." oninput="state.editingWorkout.icon=this.value; render()">
+      </div>
+    </div>
+
+    <label class="check-row"><input type="checkbox" ${ew.warmup_enabled?'checked':''} onchange="state.editingWorkout.warmup_enabled=this.checked; render()"> Розминка</label>
+    ${ew.warmup_enabled ? `
+      <div class="field"><label>Час розминки (сек)</label><input type="number" min="0" value="${ew.warmup_seconds}" oninput="state.editingWorkout.warmup_seconds=parseInt(this.value)||0"></div>
+      <div class="field"><label>Текст для розминки (необов'язково)</label><textarea oninput="state.editingWorkout.warmup_note=this.value">${ew.warmup_note||''}</textarea></div>
+    ` : ""}
+
+    <div class="field"><label>Кількість сетів</label>
+      <div class="stepper">
+        <button onclick="changeRounds(-1)">–</button>
+        <span class="stepper-val mono">${ew.rounds}</span>
+        <button onclick="changeRounds(1)">+</button>
+      </div>
+    </div>
+    ${ew.rounds>1 ? `<div class="field" style="max-width:220px"><label>Відпочинок між сетами (сек)</label><input type="number" min="0" value="${ew.rest_between_rounds_seconds||0}" oninput="state.editingWorkout.rest_between_rounds_seconds=parseInt(this.value)||0; render()"></div>` : ""}
+    ${ew.items.length>0?`<div style="font-size:13px;color:var(--ink-soft);margin-bottom:10px">Орієнтовний час тренування: ${calc.approx?'≈ ':''}${fmtDuration(calc.seconds)}</div>`:""}
+
+    <div class="section-title">Вправи для одного сету</div>
+    ${ew.items.length===0?`<div class="empty-state">Додай вправи через кнопку «+ Вправа» нижче</div>`:""}
+    ${ew.items.map((it,idx)=>`
+      <div class="builder-item">
+        <div class="top">
+          <span class="name">${idx+1}. ${it.name}</span>
+          <button class="icon-btn" onclick="moveItem(${idx},-1)">↑</button>
+          <button class="icon-btn" onclick="moveItem(${idx},1)">↓</button>
+          <button class="icon-btn" onclick="removeItem(${idx})">✕</button>
+        </div>
+        <div class="inputs">
+          ${it.type==='time' ?
+            `<div class="mini-field">Час (сек) <input type="number" min="1" value="${it.duration_seconds||30}" oninput="state.editingWorkout.items[${idx}].duration_seconds=parseInt(this.value)||0; render()"></div>`
+            : `<div class="mini-field">Повторень <input type="number" min="1" value="${it.reps||12}" oninput="state.editingWorkout.items[${idx}].reps=parseInt(this.value)||0; render()"></div>`}
+          <div class="mini-field">Повторити (раз) <input type="number" min="1" value="${it.repeat_count||1}" oninput="state.editingWorkout.items[${idx}].repeat_count=parseInt(this.value)||1; render()"></div>
+          <div class="mini-field">Пауза після (сек) <input type="number" min="0" value="${it.rest_after_seconds||0}" oninput="state.editingWorkout.items[${idx}].rest_after_seconds=parseInt(this.value)||0; render()"></div>
+        </div>
+      </div>
+    `).join("")}
+
+    <div class="add-row">
+      <button class="btn ghost sm" onclick="state.showExercisePicker=!state.showExercisePicker; render()">+ Вправа</button>
+      <button class="btn ghost sm" onclick="changeRounds(1)">+ Сет</button>
+    </div>
+    ${state.showExercisePicker ? `
+      <input class="search-input" placeholder="Пошук вправи..." value="${q}" oninput="state.exPickerQuery=this.value; render()">
+      ${q ? `<div class="picker-results">
+        ${results.length? results.map(e=>`<div class="prow"><span>${e.name}</span><button class="icon-btn" onclick="addItemToWorkout('${e.id}')">+ Додати</button></div>`).join("") : `<div class="prow">Нічого не знайдено</div>`}
+      </div>` : ""}
+    ` : ""}
+
+    <label class="check-row" style="margin-top:22px"><input type="checkbox" ${ew.cooldown_enabled?'checked':''} onchange="state.editingWorkout.cooldown_enabled=this.checked; render()"> Заминка</label>
+    ${ew.cooldown_enabled ? `
+      <div class="field"><label>Час заминки (сек)</label><input type="number" min="0" value="${ew.cooldown_seconds}" oninput="state.editingWorkout.cooldown_seconds=parseInt(this.value)||0"></div>
+      <div class="field"><label>Текст для заминки (необов'язково)</label><textarea oninput="state.editingWorkout.cooldown_note=this.value">${ew.cooldown_note||''}</textarea></div>
+    ` : ""}
+
+    <div class="modal-actions" style="margin-top:24px">
+      <button class="btn ghost" onclick="state.view='workouts'; render()">Скасувати</button>
+      <button class="btn" onclick="saveWorkout()">Зберегти тренування</button>
+    </div>
+  `;
+}
+function addItemToWorkout(exerciseId){
+  const ex = state.exercises.find(e=>e.id===exerciseId);
+  state.editingWorkout.items.push({
+    exercise_id: ex.id, name: ex.name, type: ex.type,
+    duration_seconds: ex.type==='time'?30:null, reps: ex.type==='reps'?12:null,
+    rest_after_seconds:15, repeat_count:1
+  });
+  state.exPickerQuery="";
+  render();
+}
+function moveItem(idx, dir){
+  const items = state.editingWorkout.items;
+  const j = idx+dir;
+  if(j<0||j>=items.length) return;
+  [items[idx], items[j]] = [items[j], items[idx]];
+  render();
+}
+function removeItem(idx){ state.editingWorkout.items.splice(idx,1); render(); }
+async function saveWorkout(){
+  const ew = state.editingWorkout;
+  if(!ew.name.trim()){ toast("Вкажи назву тренування"); return; }
+  if(ew.items.length===0){ toast("Додай хоча б одну вправу"); return; }
+  const workoutPayload = {
+    name: ew.name, rounds: ew.rounds, icon: ew.icon||null,
+    warmup_enabled: ew.warmup_enabled, warmup_seconds: ew.warmup_seconds||0, warmup_note: ew.warmup_note||null,
+    cooldown_enabled: ew.cooldown_enabled, cooldown_seconds: ew.cooldown_seconds||0, cooldown_note: ew.cooldown_note||null,
+    rest_between_rounds_seconds: ew.rest_between_rounds_seconds||0
+  };
+  let workoutId = ew.id;
+  if(workoutId){
+    await sb.from("workouts").update(workoutPayload).eq("id",workoutId);
+    await sb.from("workout_items").delete().eq("workout_id",workoutId);
+  } else {
+    const {data} = await sb.from("workouts").insert(workoutPayload).select().single();
+    workoutId = data.id;
+  }
+  const itemsPayload = ew.items.map((it,idx)=>({
+    workout_id: workoutId, exercise_id: it.exercise_id, order_index: idx,
+    duration_seconds: it.duration_seconds, reps: it.reps, rest_after_seconds: it.rest_after_seconds,
+    repeat_count: it.repeat_count||1
+  }));
+  const {error} = await sb.from("workout_items").insert(itemsPayload);
+  if(error){ toast("Не вдалося зберегти вправи: "+error.message); return; }
+  await loadAll();
+  state.view="workouts";
+  render();
+  toast("Тренування збережено");
+}
+
+/* ================= SCHEDULE ================= */
+function renderSchedule(){
+  return `
+    <div class="topbar"><h2 class="display">Розклад тижня</h2></div>
+    ${DAY_NAMES.map((dn,d)=>{
+      const items = state.scheduleItems.filter(s=>s.day_of_week===d).sort((a,b)=>a.order_index-b.order_index);
+      return `<div class="day-block">
+        <h3>${dn} <span class="badge">${DAY_SHORT[d]}</span></h3>
+        <div class="card row-list" style="margin-bottom:8px">
+          ${items.length? items.map(it=>{
+            const isWorkout = it.item_type==="workout";
+            const ref = isWorkout ? state.workouts.find(w=>w.id===it.workout_id) : state.careActions.find(c=>c.id===it.care_action_id);
+            return `<div class="row">
+              <div class="meta"><div class="name">${ref?ref.name:'(видалено)'}</div></div>
+              <span class="tag ${isWorkout?'move':'care'}">${isWorkout?'рух':'догляд'}</span>
+              <button class="icon-btn" onclick="removeScheduleItem('${it.id}')">✕</button>
+            </div>`;
+          }).join("") : `<div style="padding:10px 4px;color:var(--ink-faint);font-size:13px">Нічого не заплановано</div>`}
+        </div>
+        <button class="btn ghost sm" onclick="openAddScheduleModal(${d})">+ Додати на цей день</button>
+      </div>`;
+    }).join("")}
+  `;
+}
+function openAddScheduleModal(day){
+  openModal(`
+    <h2>Додати на ${DAY_NAMES[day].toLowerCase()}</h2>
+    <div class="field"><label>Тип</label>
+      <div class="seg">
+        <button id="seg_w" class="active" onclick="setSchedType('workout')">Тренування</button>
+        <button id="seg_c" onclick="setSchedType('care')">Доглядова дія</button>
+      </div>
+    </div>
+    <div class="field"><label>Що саме</label><select id="sched_select">${state.workouts.map(w=>`<option value="${w.id}">${w.name}</option>`).join("")}</select></div>
+    <div class="modal-actions">
+      <button class="btn ghost" onclick="closeModal()">Скасувати</button>
+      <button class="btn" onclick="saveScheduleItem(${day})">Додати</button>
+    </div>
+  `);
+  state.tmpSchedType = "workout";
+}
+function setSchedType(t){
+  state.tmpSchedType = t;
+  document.getElementById("seg_w").classList.toggle("active", t==="workout");
+  document.getElementById("seg_c").classList.toggle("active", t==="care");
+  const sel = document.getElementById("sched_select");
+  const list = t==="workout" ? state.workouts : state.careActions;
+  sel.innerHTML = list.map(x=>`<option value="${x.id}">${x.name}</option>`).join("") || `<option disabled>Немає елементів — додай спочатку</option>`;
+}
+async function saveScheduleItem(day){
+  const refId = document.getElementById("sched_select").value;
+  if(!refId){ toast("Спочатку додай елементи в базу"); return; }
+  const type = state.tmpSchedType;
+  const maxOrder = Math.max(0, ...state.scheduleItems.filter(s=>s.day_of_week===day).map(s=>s.order_index+1));
+  const payload = { day_of_week:day, item_type:type, order_index:maxOrder,
+    workout_id: type==='workout'?refId:null, care_action_id: type==='care'?refId:null };
+  await sb.from("schedule_items").insert(payload);
+  closeModal(); await loadAll(); render();
+}
+async function removeScheduleItem(id){
+  await sb.from("schedule_items").delete().eq("id",id);
+  await loadAll(); render();
+}
+
+/* ================= PROGRESS (unified measurements + photo) ================= */
+function valsForEntry(e){
+  const vals=[];
+  if(e.weight) vals.push(['Вага', e.weight+' кг']);
+  if(e.waist) vals.push(['Талія', e.waist+' см']);
+  if(e.hips) vals.push(['Стегна', e.hips+' см']);
+  if(e.chest) vals.push(['Груди', e.chest+' см']);
+  if(e.thigh) vals.push(['Стегно', e.thigh+' см']);
+  if(e.arm) vals.push(['Рука', e.arm+' см']);
+  if(e.custom_fields) Object.entries(e.custom_fields).forEach(([k,v])=>{ if(k) vals.push([k, v]); });
+  return vals;
+}
+function renderProgressCard(e){
+  const vals = valsForEntry(e);
+  return `<div class="progress-card">
+    ${e.photo_url ? `<div class="pc-photo"><img src="${e.photo_url}"><div class="pc-date">${fmtShortDate(e.entry_date)}</div></div>`
+      : `<div class="pc-noPhoto"><span>${fmtShortDate(e.entry_date)}</span></div>`}
+    <div class="pc-vals">
+      ${vals.length ? vals.map(([k,v])=>`<div class="pc-chip"><span class="k">${k}</span><span class="v mono">${v}</span></div>`).join("") : `<span class="pc-empty">Без замірів</span>`}
+    </div>
+  </div>`;
+}
+function renderCompare(withPhotos){
+  if(!state.compareA || !withPhotos.find(e=>e.id===state.compareA)) state.compareA = withPhotos[withPhotos.length-1].id;
+  if(!state.compareB || !withPhotos.find(e=>e.id===state.compareB)) state.compareB = withPhotos[0].id;
+  const a = withPhotos.find(e=>e.id===state.compareA);
+  const b = withPhotos.find(e=>e.id===state.compareB);
+  return `
+    <div class="card">
+      <div class="compare-selects">
+        <select onchange="state.compareA=this.value; render()">${withPhotos.map(e=>`<option value="${e.id}" ${e.id===a.id?'selected':''}>${fmtShortDate(e.entry_date)}</option>`).join("")}</select>
+        <span>→</span>
+        <select onchange="state.compareB=this.value; render()">${withPhotos.map(e=>`<option value="${e.id}" ${e.id===b.id?'selected':''}>${fmtShortDate(e.entry_date)}</option>`).join("")}</select>
+      </div>
+      <div class="compare-grid">
+        <div class="compare-col"><img src="${a.photo_url}"><div class="compare-vals">${valsForEntry(a).map(([k,v])=>`<div>${k}: <b class="mono">${v}</b></div>`).join("")||'<div>Без замірів</div>'}</div></div>
+        <div class="compare-col"><img src="${b.photo_url}"><div class="compare-vals">${valsForEntry(b).map(([k,v])=>`<div>${k}: <b class="mono">${v}</b></div>`).join("")||'<div>Без замірів</div>'}</div></div>
+      </div>
+    </div>
+  `;
+}
+function renderProgress(){
+  const entries = state.progressEntries;
+  const withPhotos = entries.filter(e=>e.photo_url);
+  const custom = state.tmpCustomFields || [];
+  return `
+    <div class="topbar"><h2 class="display">Прогрес</h2></div>
+
+    <div class="section-title">Новий запис</div>
+    <div class="card">
+      <div class="field"><label>Дата</label><input id="m_date" type="date" value="${toDateStr(todayDate())}"></div>
+      <div class="field"><label>Фото</label><input type="file" accept="image/*" id="photoInput"></div>
+      <div class="meas-grid">
+        <div class="field"><label>Вага (кг)</label><input id="m_weight" type="number" step="0.1"></div>
+        <div class="field"><label>Талія (см)</label><input id="m_waist" type="number" step="0.1"></div>
+        <div class="field"><label>Стегна (см)</label><input id="m_hips" type="number" step="0.1"></div>
+        <div class="field"><label>Груди (см)</label><input id="m_chest" type="number" step="0.1"></div>
+        <div class="field"><label>Стегно (см)</label><input id="m_thigh" type="number" step="0.1"></div>
+        <div class="field"><label>Рука (см)</label><input id="m_arm" type="number" step="0.1"></div>
+      </div>
+      ${custom.map((c,i)=>`
+        <div class="meas-grid">
+          <div class="field"><input type="text" placeholder="Назва поля" value="${c.name}" oninput="state.tmpCustomFields[${i}].name=this.value"></div>
+          <div class="field"><input type="number" step="0.1" placeholder="Значення" value="${c.value}" oninput="state.tmpCustomFields[${i}].value=this.value"></div>
+        </div>`).join("")}
+      <button class="btn ghost sm" onclick="addCustomField()">+ Своє поле</button>
+      <div class="modal-actions"><button class="btn signal" onclick="saveProgressEntry()">Зберегти запис</button></div>
+    </div>
+
+    <div class="section-title">До / після</div>
+    ${withPhotos.length>=2 ? renderCompare(withPhotos) : `<div class="empty-state" style="padding:24px 12px">Додай ще одне фото, щоб порівнювати до/після</div>`}
+
+    <div class="section-title">Історія</div>
+    <div class="progress-cards">
+      ${entries.length ? entries.map(renderProgressCard).join("") : `<div class="empty-state">Поки немає записів</div>`}
+    </div>
+  `;
+}
+function addCustomField(){
+  state.tmpCustomFields = state.tmpCustomFields || [];
+  state.tmpCustomFields.push({name:"",value:""});
+  render();
+}
+async function saveProgressEntry(){
+  const num = (id)=>{ const v=document.getElementById(id).value; return v===""?null:parseFloat(v); };
+  const customObj = {};
+  (state.tmpCustomFields||[]).forEach(c=>{ if(c.name) customObj[c.name]=c.value; });
+  const fields = { weight:num("m_weight"), waist:num("m_waist"), hips:num("m_hips"), chest:num("m_chest"), thigh:num("m_thigh"), arm:num("m_arm") };
+  const hasAnyMeasurement = Object.values(fields).some(v=>v!==null) || Object.keys(customObj).length>0;
+  const file = document.getElementById("photoInput").files[0];
+  if(!hasAnyMeasurement && !file){ toast("Заповни хоча б одне поле або додай фото"); return; }
+
+  let photo_url = null;
+  if(file){
+    const path = `${Date.now()}-${file.name}`;
+    const {error:upErr} = await sb.storage.from("progress-photos").upload(path, file);
+    if(upErr){ toast("Не вдалося завантажити фото: "+upErr.message); console.error(upErr); return; }
+    const {data:urlData} = sb.storage.from("progress-photos").getPublicUrl(path);
+    photo_url = urlData.publicUrl;
+  }
+
+  const payload = { entry_date: document.getElementById("m_date").value || toDateStr(todayDate()), ...fields, custom_fields: customObj, photo_url };
+  const {error} = await sb.from("progress_entries").insert(payload);
+  if(error){ toast("Не вдалося зберегти: "+error.message); console.error(error); return; }
+  state.tmpCustomFields = [];
+  await loadAll(); render(); toast("Збережено");
+}
+
+/* ================= EXECUTION MODE ================= */
+function buildSequence(workout){
+  const seq = [];
+  if(workout.warmup_enabled && workout.warmup_seconds>0){
+    seq.push({kind:"warmup", seconds:workout.warmup_seconds, note:workout.warmup_note});
+  }
+  for(let r=0;r<workout.rounds;r++){
+    workout.items.forEach(it=>{
+      const occ = it.repeat_count||1;
+      for(let o=0;o<occ;o++){
+        seq.push({kind:"exercise", item:it, round:r+1, occurrence:o+1, occurrencesTotal:occ});
+        if(it.rest_after_seconds>0) seq.push({kind:"rest", seconds:it.rest_after_seconds, round:r+1});
+      }
+    });
+    if(r < workout.rounds-1 && workout.rest_between_rounds_seconds>0){
+      seq.push({kind:"rest_round", seconds:workout.rest_between_rounds_seconds, round:r+1});
+    }
+  }
+  if(workout.cooldown_enabled && workout.cooldown_seconds>0){
+    seq.push({kind:"cooldown", seconds:workout.cooldown_seconds, note:workout.cooldown_note});
+  }
+  return seq;
+}
+function startExecution(workout, scheduleItemId){
+  const seq = buildSequence(workout);
+  state.exec = { workout, scheduleItemId, seq, idx:0, remaining:0, paused:false, timer:null };
+  document.getElementById("execScreen").classList.add("shown");
+  runExecStep();
+}
+function clearExecTimer(){
+  if(state.exec.timer){ clearInterval(state.exec.timer); state.exec.timer=null; }
+}
+function runExecStep(){
+  const ex = state.exec;
+  clearExecTimer();
+  if(ex.idx >= ex.seq.length){ finishExecution(); return; }
+  const step = ex.seq[ex.idx];
+  const screen = document.getElementById("execScreen");
+  screen.classList.toggle("rest", step.kind!=="exercise");
+
+  if(step.kind!=="exercise"){
+    ex.remaining = step.seconds;
+    renderExecScreen(step);
+    ex.timer = setInterval(()=>{
+      if(ex.paused) return;
+      ex.remaining--;
+      updateExecCountdown();
+      if(ex.remaining<=0){ ex.idx++; runExecStep(); }
+    },1000);
+  } else if(step.item.type==="time"){
+    ex.remaining = step.item.duration_seconds;
+    renderExecScreen(step);
+    ex.timer = setInterval(()=>{
+      if(ex.paused) return;
+      ex.remaining--;
+      updateExecCountdown();
+      if(ex.remaining<=0){ ex.idx++; runExecStep(); }
+    },1000);
+  } else {
+    renderExecScreen(step);
+  }
+}
+function renderExecScreen(step){
+  const ex = state.exec;
+  const totalRounds = ex.workout.rounds;
+  const pct = Math.round((ex.idx/ex.seq.length)*100);
+  let mid = "";
+  if(step.kind!=="exercise"){
+    const label = KICKER_LABELS[step.kind] || "Пауза";
+    mid = `<div class="exec-kicker">${label}</div><div class="exec-big-num">${ex.remaining}</div><div class="exec-unit">секунд</div>${step.note?`<div class="exec-note">${step.note}</div>`:""}`;
+  } else {
+    const gif = state.exercises.find(e=>e.id===step.item.exercise_id)?.gif_url;
+    const note = exNote(step.item);
+    if(step.item.type==="time"){
+      mid = `
+        ${gif?`<img class="exec-gif" src="${gif}">`:""}
+        <div class="exec-name display">${step.item.name||'Вправа'}</div>
+        ${note}
+        <div class="exec-big-num">${ex.remaining}</div><div class="exec-unit">секунд лишилось</div>`;
+    } else {
+      mid = `
+        ${gif?`<img class="exec-gif" src="${gif}">`:""}
+        <div class="exec-name display">${step.item.name||'Вправа'}</div>
+        ${note}
+        <div class="exec-big-num">${step.item.reps||0}</div><div class="exec-unit">повторень</div>`;
+    }
+  }
+  document.getElementById("execScreen").innerHTML = `
+    <div class="exec-progress-full"><i style="width:${pct}%"></i></div>
+    <div class="exec-top">
+      <button onclick="exitExecution()">Вийти</button>
+      <span class="exec-step-count mono">${ex.idx+1} / ${ex.seq.length}</span>
+      <button onclick="togglePause()" id="pauseBtn">${ex.paused?'Продовжити':'Пауза'}</button>
+    </div>
+    <div class="exec-mid">
+      <div class="exec-kicker" style="${step.kind!=='exercise'?'display:none':''}">Раунд ${step.round} з ${totalRounds}${step.occurrencesTotal>1?` · Повтор ${step.occurrence} з ${step.occurrencesTotal}`:''}</div>
+      ${mid}
+    </div>
+    <div class="exec-bottom">
+      ${step.kind==="exercise" && step.item.type==="reps" ? `<button class="btn primary" onclick="advanceExec()">Готово</button>` : `<button class="btn" onclick="advanceExec()">Пропустити</button>`}
+    </div>
+  `;
+}
+function exNote(item){
+  const ex = state.exercises.find(e=>e.id===item.exercise_id);
+  return ex && ex.note ? `<div class="exec-note">${ex.note}</div>` : "";
+}
+function updateExecCountdown(){
+  const numEl = document.querySelector("#execScreen .exec-big-num");
+  if(numEl) numEl.textContent = state.exec.remaining;
+  const pctBar = document.querySelector("#execScreen .exec-progress-full i");
+  if(pctBar) pctBar.style.width = Math.round((state.exec.idx/state.exec.seq.length)*100)+"%";
+}
+function togglePause(){
+  state.exec.paused = !state.exec.paused;
+  document.getElementById("pauseBtn").textContent = state.exec.paused ? "Продовжити" : "Пауза";
+}
+function advanceExec(){
+  state.exec.idx++;
+  runExecStep();
+}
+function exitExecution(){
+  if(!confirm("Вийти з тренування? Прогрес цього разу не зарахується.")) return;
+  clearExecTimer();
+  document.getElementById("execScreen").classList.remove("shown");
+  state.exec = null;
+}
+async function finishExecution(){
+  clearExecTimer();
+  const t = toDateStr(todayDate());
+  const scheduleItemId = state.exec.scheduleItemId;
+  const exists = state.completions.some(c=>c.completion_date===t && c.schedule_item_id===scheduleItemId);
+  if(!exists){
+    const {data} = await sb.from("daily_completions").insert({completion_date:t, schedule_item_id:scheduleItemId}).select().single();
+    if(data) state.completions.push(data);
+  }
+  document.getElementById("execScreen").innerHTML = `
+    <div class="exec-mid" style="margin:auto">
+      <div class="exec-name display">Тренування завершено</div>
+      <div class="exec-note">Чудова робота</div>
+      <button class="btn primary" onclick="closeExecution()">До плану дня</button>
+    </div>`;
+}
+function closeExecution(){
+  document.getElementById("execScreen").classList.remove("shown");
+  state.exec = null;
+  state.view = "home";
+  render();
+}
+</script>
+</body>
+</html>
