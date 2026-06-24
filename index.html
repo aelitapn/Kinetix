@@ -3,938 +3,592 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Журнал тіла</title>
+<title>Kinetix</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Afacad:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
-  --canvas:#EDE6E0; --surface:#F7F3EE; --surface-2:#FFFFFF;
-  --ink:#271D22; --ink-soft:#6B5F66; --ink-faint:#A89B9F;
-  --move:#3E1F3B; --move-soft:#EFE3ED;
-  --care:#57624A; --care-soft:#E6EBE0;
-  --signal:#8C6FA8; --signal-soft:#EDE3F3;
-  --border:rgba(39,29,34,.13); --border-strong:rgba(39,29,34,.22);
-  --r:14px; --r-sm:9px;
-  --shadow:0 1px 2px rgba(39,29,34,.06),0 6px 18px rgba(39,29,34,.05);
-  --fd:'Bricolage Grotesque',sans-serif;
-  --fb:'Manrope',sans-serif;
-  --fm:'Space Mono',monospace;
+  --bg:#f3f2f0; --surface:#fff; --ink:#1c1c1e; --ink-soft:#6b5f66; --ink-faint:#8a8a8e;
+  --accent:#c6a2ff; --accent-nav:#d4f4e7;
+  --border:#dad2ca; --border-subtle:#e8e4df; --border-row:#f2efe9;
+  --card-bg:#f7f3f0;
+  --shadow-card:0 4px 20px rgba(0,0,0,.07);
+  --shadow-input:0 2px 12px rgba(0,0,0,.05);
+  --shadow-btn:0 4px 14px rgba(0,0,0,.12);
+  --r-card:18px; --r-pill:100px; --r-btn:28px;
+  --fa:'Afacad',sans-serif; --fb:'Manrope',sans-serif;
+  --fd:'Bricolage Grotesque',sans-serif; --fm:'Space Mono',monospace;
 }
 *{box-sizing:border-box;} html,body{margin:0;padding:0;}
-body{background:var(--canvas);color:var(--ink);font-family:var(--fb);-webkit-font-smoothing:antialiased;min-height:100vh;}
-h1,h2,h3,.display{font-family:var(--fd);font-weight:700;}
-.mono{font-family:var(--fm);font-variant-numeric:tabular-nums;}
+body{background:var(--bg);color:var(--ink);font-family:var(--fb);-webkit-font-smoothing:antialiased;min-height:100vh;}
 button{font-family:inherit;cursor:pointer;}
-input,select,textarea{font-family:inherit;font-size:15px;}
+input,select,textarea{font-family:inherit;}
 
-/* ── pin ── */
-#pinGate{position:fixed;inset:0;background:var(--canvas);display:flex;align-items:center;justify-content:center;z-index:200;flex-direction:column;gap:22px;padding:24px;}
+/* ── BLOBS ── */
+.blob-wrap{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+.blob-wrap::before{content:'';position:absolute;width:343px;height:345px;top:-7px;left:3px;background:radial-gradient(ellipse at center,rgba(198,162,255,.22) 0%,rgba(198,162,255,0) 65%);border-radius:50%;}
+.blob-wrap::after{content:'';position:absolute;width:486px;height:486px;top:352px;left:3px;background:radial-gradient(ellipse at center,rgba(212,244,231,.28) 0%,rgba(212,244,231,0) 65%);border-radius:50%;transform:rotate(-42.57deg);}
+
+/* ── PIN ── */
+#pinGate{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:200;flex-direction:column;padding:24px;}
 #pinGate.hidden{display:none;}
-.pin-box{display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;max-width:280px;}
-.pin-box h1{font-size:22px;margin:0;}
-.pin-box input{width:100%;text-align:center;letter-spacing:8px;font-size:24px;padding:14px 10px;border-radius:var(--r-sm);border:1.5px solid var(--border-strong);background:var(--surface-2);color:var(--ink);font-family:var(--fm);}
-.pin-error{color:var(--signal);font-size:13px;min-height:16px;}
+.pin-blob{width:343px;height:242px;background:radial-gradient(ellipse at center,rgba(198,162,255,.28) 0%,rgba(212,244,231,.22) 45%,transparent 70%);border-radius:50%;flex-shrink:0;}
+.pin-app-name{font-family:var(--fa);font-size:68px;color:#6d6d6d;text-align:center;line-height:1;margin:-90px 0 0;position:relative;}
+.pin-form{display:flex;flex-direction:column;gap:24px;width:100%;max-width:343px;margin-top:48px;}
+.pin-hint{font-family:var(--fa);font-size:16px;color:#6d6d6d;text-align:center;}
+.pin-error{color:var(--accent);font-size:13px;text-align:center;min-height:16px;}
 
-/* ── buttons ── */
-.btn{border:none;border-radius:var(--r-sm);padding:12px 20px;font-weight:600;font-size:14.5px;background:var(--move);color:#fff;transition:transform .12s,opacity .12s;}
-.btn:active{transform:scale(.97);}
-.btn.block{width:100%;}
-.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--border-strong);}
-.btn.care{background:var(--care);}
-.btn.signal{background:var(--signal);}
-.btn.sm{padding:8px 14px;font-size:13px;}
-.btn[disabled]{opacity:.45;pointer-events:none;}
+/* ── BUTTONS ── */
+.btn-p{background:var(--accent);color:#fff;border:none;border-radius:var(--r-btn);padding:11px 28px;font-weight:700;font-size:13.5px;box-shadow:var(--shadow-btn);display:flex;align-items:center;justify-content:center;gap:4px;transition:transform .12s;}
+.btn-p:active{transform:scale(.97);}
+.btn-p.block{width:100%;}
+.btn-w{background:var(--surface);color:var(--ink);border:none;border-radius:var(--r-btn);padding:8px 16px;font-weight:700;font-size:13.5px;display:flex;align-items:center;justify-content:center;gap:4px;}
+.btn-ghost{background:transparent;color:var(--ink);border:1px solid #a89b9f;border-radius:var(--r-btn);padding:8px 16px;font-weight:700;font-size:13.5px;display:flex;align-items:center;justify-content:center;gap:4px;}
 
-/* ── shell ── */
+/* ── SHELL ── */
 #app{display:none;min-height:100vh;}
 #app.shown{display:block;}
-.shell{display:flex;min-height:100vh;}
-nav.sidenav{display:none;}
-main#view{flex:1;padding:20px 16px 90px;max-width:760px;margin:0 auto;width:100%;}
-.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;gap:10px;}
+main#view{position:relative;z-index:1;padding:20px 16px 110px;max-width:480px;margin:0 auto;}
+@media(min-width:640px){main#view{padding:32px 32px 110px;max-width:680px;}}
 
-nav.bottomnav{position:fixed;bottom:0;left:0;right:0;background:var(--surface-2);border-top:1px solid var(--border);display:flex;justify-content:space-around;padding:8px 4px calc(8px + env(safe-area-inset-bottom));z-index:50;}
-nav.bottomnav button{background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--ink-faint);font-size:11px;padding:6px 8px;border-radius:10px;flex:1;}
-nav.bottomnav button .dot{width:7px;height:7px;border-radius:50%;background:transparent;}
-nav.bottomnav button.active{color:var(--ink);}
-nav.bottomnav button.active .dot{background:var(--move);}
+/* ── BOTTOM NAV (pill, centered) ── */
+nav.bottomnav{position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:center;padding:10px 16px calc(10px + env(safe-area-inset-bottom));z-index:50;pointer-events:none;}
+.nav-pill{background:var(--surface);border-radius:var(--r-pill);padding:4px;display:flex;gap:4px;width:100%;max-width:343px;pointer-events:all;box-shadow:0 4px 20px rgba(0,0,0,.08);}
+.nav-tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 6px;border-radius:var(--r-pill);border:none;background:transparent;cursor:pointer;}
+.nav-tab svg{width:20px;height:20px;opacity:.4;stroke:var(--ink);}
+.nav-tab .nav-label{font-size:11px;font-weight:400;color:var(--ink-faint);}
+.nav-tab.active{background:var(--accent-nav);}
+.nav-tab.active svg{opacity:1;}
+.nav-tab.active .nav-label{font-weight:700;color:var(--ink);}
 
-@media(min-width:880px){
-  main#view{padding:36px 40px 40px;max-width:920px;margin:0;}
-  nav.bottomnav{display:none;}
-  nav.sidenav{display:flex;flex-direction:column;width:220px;flex-shrink:0;background:var(--surface-2);border-right:1px solid var(--border);padding:28px 18px;gap:4px;}
-  nav.sidenav .brand{font-family:var(--fd);font-size:18px;margin-bottom:24px;}
-  nav.sidenav button{text-align:left;background:none;border:none;padding:10px 12px;border-radius:var(--r-sm);color:var(--ink-soft);font-size:14.5px;font-weight:600;display:flex;align-items:center;gap:10px;}
-  nav.sidenav button.active{background:var(--move-soft);color:var(--move);}
-  .shell{max-width:1180px;margin:0 auto;}
-}
-
-/* ── cards / lists ── */
-.card{background:var(--surface-2);border-radius:var(--r);padding:16px;box-shadow:var(--shadow);margin-bottom:12px;}
-.section-title{font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-soft);margin:24px 0 10px;font-weight:700;}
-.row-list .row{display:flex;align-items:center;gap:12px;padding:13px 4px;border-bottom:1px solid var(--border);}
-.row-list .row:last-child{border-bottom:none;}
-.row .meta{flex:1;min-width:0;}
-.row .meta .name{font-weight:600;font-size:14.5px;}
-.row .meta .sub{font-size:12px;color:var(--ink-soft);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.row-thumb{width:46px;height:46px;border-radius:10px;object-fit:cover;background:var(--canvas);flex-shrink:0;}
-.row-actions{display:flex;gap:6px;}
-.icon-btn{background:none;border:none;color:var(--ink-soft);font-size:13px;padding:6px 8px;border-radius:8px;}
-.icon-btn:hover{background:var(--canvas);}
-.fab-row{display:flex;justify-content:flex-end;margin:14px 0 4px;}
-.empty-state{text-align:center;padding:40px 16px;color:var(--ink-soft);}
-.empty-state .display{font-size:17px;color:var(--ink);margin-bottom:6px;}
-.tag{font-size:10.5px;padding:3px 8px;border-radius:20px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;}
-.tag.move{background:var(--move-soft);color:var(--move);}
-.tag.care{background:var(--care-soft);color:var(--care);}
-
-/* ── week calendar ── */
-.week-nav{display:flex;align-items:center;gap:6px;margin-bottom:18px;}
-.week-arrow{background:var(--surface-2);border:1.5px solid var(--border);border-radius:10px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--ink);flex-shrink:0;}
-.week-days{display:flex;gap:5px;flex:1;overflow-x:auto;scrollbar-width:none;padding:2px 0;}
-.week-days::-webkit-scrollbar{display:none;}
-.day-pill{display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 0;min-width:38px;border-radius:10px;border:1.5px solid transparent;background:transparent;font-family:var(--fb);cursor:pointer;flex-shrink:0;}
-.day-pill .dp-wd{font-size:10px;font-weight:700;text-transform:uppercase;color:var(--ink-soft);letter-spacing:.04em;}
-.day-pill .dp-d{font-size:15px;font-weight:700;color:var(--ink);}
-.day-pill .dp-dot{width:5px;height:5px;border-radius:50%;background:transparent;}
-.day-pill.has-items .dp-dot{background:var(--signal);}
-.day-pill.active{background:var(--move);border-color:var(--move);}
-.day-pill.active .dp-wd,.day-pill.active .dp-d{color:#fff;}
-.day-pill.active .dp-dot{background:rgba(255,255,255,.6);}
-.day-pill.today-ring{border-color:var(--signal);}
-
-/* ── streak ── */
-.ring-wrap{position:relative;display:inline-flex;align-items:center;justify-content:center;}
-.ring-wrap .ring-center{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;}
-.today-head{display:flex;align-items:center;gap:16px;margin-bottom:14px;}
-.progress-bar{height:6px;border-radius:4px;background:var(--border);overflow:hidden;margin:0 0 4px;}
-.progress-bar i{display:block;height:100%;background:var(--signal);transition:width .3s;}
-.plan-item{display:flex;align-items:center;gap:12px;padding:14px 4px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
-.plan-item:last-child{border-bottom:none;}
-.plan-check{width:24px;height:24px;border-radius:50%;border:1.8px solid var(--border-strong);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;background:var(--surface-2);}
-.plan-check.done{border-color:transparent;}
-.plan-check.done.move{background:var(--move);}
-.plan-check.done.care{background:var(--care);}
-.plan-item .meta{flex:1;min-width:140px;}
-.plan-item .meta .name{font-weight:600;font-size:14.5px;}
-.plan-item .meta .sub{font-size:12px;color:var(--ink-soft);margin-top:1px;}
-.day-head-sec{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
-.day-head-sec h3{font-size:16px;margin:0;}
-.day-add-btn{width:30px;height:30px;border-radius:9px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:var(--ink);border:1.5px solid var(--border);flex-shrink:0;}
-
-/* ── forms ── */
-.field{margin-bottom:14px;}
-.field label{display:block;font-size:12.5px;font-weight:700;color:var(--ink-soft);margin-bottom:6px;text-transform:uppercase;letter-spacing:.03em;}
-.field input[type=text],.field input[type=number],.field input[type=url],.field input[type=date],.field input[type=file],.field textarea,.field select{width:100%;padding:10px 12px;border-radius:var(--r-sm);border:1.5px solid var(--border);background:var(--canvas);}
-.field textarea{resize:vertical;min-height:60px;}
-.check-row{display:flex;align-items:center;gap:9px;font-weight:600;font-size:14.5px;margin-bottom:12px;}
-.check-row input[type=checkbox]{width:19px;height:19px;accent-color:var(--signal);}
-.seg{display:flex;gap:8px;}
-.seg button{flex:1;padding:10px;border-radius:var(--r-sm);border:1.5px solid var(--border);background:var(--canvas);color:var(--ink-soft);font-weight:600;font-size:13.5px;}
-.seg button.active{background:var(--move);color:#fff;border-color:var(--move);}
-.search-input{width:100%;padding:11px 14px;border-radius:var(--r-sm);border:1.5px solid var(--border);background:var(--surface-2);margin-bottom:12px;}
-.stepper{display:flex;align-items:center;gap:14px;}
-.stepper button{width:38px;height:38px;border-radius:50%;border:1.5px solid var(--border-strong);background:var(--surface-2);font-size:18px;font-weight:700;color:var(--ink);display:flex;align-items:center;justify-content:center;}
-.stepper-val{font-size:20px;font-weight:700;min-width:24px;text-align:center;}
-.add-row{display:flex;gap:10px;margin:14px 0;}
-.picker-results{max-height:160px;overflow-y:auto;border:1.5px solid var(--border);border-radius:var(--r-sm);margin-top:6px;}
-.picker-results .prow{padding:10px 12px;border-bottom:1px solid var(--border);font-size:14px;display:flex;justify-content:space-between;align-items:center;}
-.picker-results .prow:last-child{border-bottom:none;}
-
-/* ── workout builder items ── */
-.builder-item{background:var(--canvas);border-radius:var(--r-sm);padding:12px;margin-bottom:8px;}
-.builder-item .b-top{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
-.builder-item .b-top .b-name{font-weight:600;flex:1;font-size:14px;}
-.b-mini-row{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;}
-.mini-field{display:flex;flex-direction:column;gap:4px;flex:1;min-width:80px;}
-.mini-field label{font-size:10.5px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;}
-.mini-field input{width:100%;padding:7px 9px;border-radius:8px;border:1.3px solid var(--border);background:var(--surface-2);font-size:13.5px;}
-
-/* ── modal ── */
-.modal-backdrop{position:fixed;inset:0;background:rgba(39,29,34,.4);display:none;align-items:flex-end;justify-content:center;z-index:100;}
-.modal-backdrop.shown{display:flex;}
-.modal{background:var(--surface-2);border-radius:18px 18px 0 0;padding:22px 20px calc(22px + env(safe-area-inset-bottom));width:100%;max-width:480px;max-height:88vh;overflow-y:auto;}
-@media(min-width:880px){.modal-backdrop{align-items:center;}.modal{border-radius:18px;max-height:84vh;}}
-.modal h2{font-size:18px;margin:0 0 16px;}
-.modal-actions{display:flex;gap:10px;margin-top:18px;}
-.modal-actions .btn{flex:1;}
-
-/* ── execution ── */
-#execScreen{position:fixed;inset:0;background:var(--move);color:#fff;z-index:300;display:none;flex-direction:column;}
-#execScreen.rest{background:var(--ink);}
-#execScreen.shown{display:flex;}
-.exec-progress-full{position:absolute;top:0;left:0;right:0;height:6px;background:rgba(255,255,255,.18);z-index:2;}
-.exec-progress-full i{display:block;height:100%;background:#fff;transition:width .3s;}
-.exec-scroll{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:36px 22px 16px;text-align:center;gap:14px;}
-.exec-gif{width:min(64vw,220px);height:min(64vw,220px);border-radius:20px;object-fit:cover;background:rgba(255,255,255,.08);}
-.exec-name{font-size:23px;}
-.exec-note{font-size:13.5px;opacity:.75;max-width:280px;}
-.exec-big-num{font-family:var(--fm);font-size:58px;font-weight:700;line-height:1;}
-.exec-unit{font-size:12.5px;opacity:.7;}
-.exec-controls{flex-shrink:0;padding:14px 22px calc(14px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;gap:10px;background:rgba(0,0,0,.14);}
-.exec-step-count{font-size:12px;opacity:.8;font-family:var(--fm);}
-.exec-btn-row{display:flex;gap:10px;width:100%;max-width:380px;}
-.exec-btn-row button{flex:1;border:none;border-radius:12px;padding:13px 8px;font-weight:700;font-size:13px;color:#fff;background:rgba(255,255,255,.16);text-align:center;}
-.exec-btn-row button.exec-main{background:#fff;color:var(--signal);}
-
-/* ── progress ── */
-.prog-entry-form{}
+/* ── INPUTS (pill style) ── */
+.field{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+.field label,.field-label{font-size:11px;font-weight:700;color:var(--ink-soft);letter-spacing:.03em;text-transform:uppercase;}
+.pill-input{width:100%;padding:8px 16px;border-radius:var(--r-pill);border:1px solid var(--border-subtle);background:var(--surface);box-shadow:var(--shadow-input);backdrop-filter:blur(3px);font-size:16px;color:var(--ink);}
+.pill-input:focus{outline:2px solid var(--accent);outline-offset:1px;}
+.pill-input::placeholder{color:var(--ink-faint);}
+.pill-select{width:100%;padding:8px 36px 8px 16px;border-radius:var(--r-pill);border:1px solid var(--border-subtle);background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b5f66' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 14px center;box-shadow:var(--shadow-input);font-size:16px;color:var(--ink);appearance:none;}
+.pill-textarea{width:100%;padding:10px 16px;border-radius:22px;border:1px solid var(--border-subtle);background:var(--surface);box-shadow:var(--shadow-input);font-size:16px;color:var(--ink);resize:vertical;min-height:64px;}
 .meas-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.section-nav-btn{display:flex;align-items:center;justify-content:space-between;width:100%;background:var(--surface-2);border:none;padding:14px 16px;border-radius:var(--r);box-shadow:var(--shadow);margin-bottom:8px;font-size:15px;font-weight:600;color:var(--ink);}
-.section-nav-btn .arr{font-size:20px;color:var(--ink-soft);}
 
-/* ── progress cards redesign ── */
-.prog-back-btn{display:flex;align-items:center;gap:8px;background:none;border:none;font-size:14px;font-weight:600;color:var(--ink-soft);margin-bottom:18px;padding:0;}
-.prog-subtabs{display:flex;gap:8px;margin-bottom:16px;}
-.prog-subtabs button{flex:1;padding:10px;border-radius:var(--r-sm);border:1.5px solid var(--border);background:var(--canvas);color:var(--ink-soft);font-weight:600;font-size:13.5px;}
-.prog-subtabs button.active{background:var(--move);color:#fff;border-color:var(--move);}
+/* ── TOPBAR ── */
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.topbar h2{font-family:var(--fa);font-weight:700;font-size:22px;color:var(--ink);margin:0;}
+.topbar-icon{width:40px;height:40px;border-radius:12px;background:transparent;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.back-btn{background:var(--surface);border:none;border-radius:var(--r-btn);padding:8px 16px;font-size:13.5px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:4px;cursor:pointer;}
+.close-btn{width:40px;height:40px;border-radius:12px;border:none;background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;}
 
-.pc-card{background:var(--surface-2);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);margin-bottom:14px;}
-.pc-photos-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:var(--canvas);}
-.pc-photo-cell{aspect-ratio:3/4;overflow:hidden;position:relative;background:var(--canvas);}
-.pc-photo-cell img{width:100%;height:100%;object-fit:cover;display:block;}
-.pc-photo-label{position:absolute;bottom:0;left:0;right:0;padding:3px 6px;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.9);background:linear-gradient(transparent,rgba(0,0,0,.55));}
-.pc-no-photo{aspect-ratio:3/4;background:var(--canvas);display:flex;align-items:center;justify-content:center;color:var(--ink-faint);font-size:11px;font-family:var(--fm);}
+/* ── SEGMENTED CONTROL ── */
+.seg-ctrl{background:var(--surface);border-radius:var(--r-pill);padding:4px;display:flex;gap:4px;margin-bottom:16px;}
+.seg-ctrl button{flex:1;padding:10px;border-radius:var(--r-pill);border:none;background:transparent;color:var(--ink-faint);font-weight:700;font-size:13.5px;transition:background .15s;}
+.seg-ctrl button.active{background:var(--accent-nav);color:#2d2d2d;}
+
+/* ── CARD & ROWS ── */
+.card{background:var(--surface);border-radius:var(--r-card);padding:16px;box-shadow:var(--shadow-card);margin-bottom:16px;}
+.row-list{}
+.row-list .row{display:flex;align-items:center;gap:12px;padding:8px 0;}
+.row-list .row+.row{border-top:1px solid var(--border-row);}
+.row-icon{width:46px;height:46px;border-radius:12px;background:var(--card-bg);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;overflow:hidden;}
+.row-icon img{width:100%;height:100%;object-fit:cover;}
+.row-meta{flex:1;min-width:0;}
+.row-name{font-family:var(--fa);font-weight:600;font-size:14.5px;color:var(--ink);}
+.row-sub{font-family:var(--fa);font-size:12.5px;color:var(--ink-faint);margin-top:2px;}
+.row-action{width:40px;height:40px;border-radius:12px;border:none;background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
+
+/* ── PLAN CARD (home) ── */
+.plan-card{background:var(--surface);border-radius:var(--r-card);padding:14px 16px;box-shadow:var(--shadow-card);margin-bottom:12px;}
+.plan-row{display:flex;align-items:center;gap:12px;padding:8px 0;}
+.plan-row+.plan-row{border-top:1px solid var(--border-row);}
+.plan-check{width:24px;height:24px;border-radius:12px;border:1px solid #c2c2c2;background:var(--surface);flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.plan-check.done{background:var(--accent);border-color:var(--accent);}
+.plan-meta{flex:1;min-width:0;}
+.plan-name{font-family:var(--fa);font-weight:600;font-size:14.5px;color:var(--ink);}
+.plan-sub{font-family:var(--fa);font-size:12.5px;color:var(--ink-faint);margin-top:2px;}
+.plan-start{background:var(--accent);color:#fff;border:none;border-radius:var(--r-btn);padding:4px 16px;font-family:var(--fa);font-weight:700;font-size:14px;line-height:22px;box-shadow:var(--shadow-btn);white-space:nowrap;}
+.plan-restore{background:none;border:none;width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;opacity:.5;cursor:pointer;}
+
+/* ── STREAK / PROGRESS BAR ── */
+.streak-row{display:flex;align-items:center;gap:16px;margin-bottom:8px;}
+.ring-wrap{position:relative;display:inline-flex;align-items:center;justify-content:center;}
+.ring-center{position:absolute;display:flex;align-items:center;justify-content:center;}
+.progress-bar{height:6px;border-radius:4px;background:var(--border);overflow:hidden;margin-bottom:4px;}
+.progress-bar i{display:block;height:100%;background:var(--accent);transition:width .3s;}
+.day-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;margin-top:14px;}
+.day-title{font-family:var(--fa);font-weight:700;font-size:22px;color:var(--ink);margin:0;}
+.day-add-btn{width:30px;height:30px;border-radius:var(--r-pill);background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:var(--ink);}
+
+/* ── SCHEDULE SCREEN ── */
+.sched-day-block{display:flex;gap:8px;align-items:flex-end;margin-bottom:14px;}
+.sched-day-left{flex:1;display:flex;flex-direction:column;gap:8px;}
+.sched-day-right{display:flex;flex-direction:column;gap:8px;align-items:center;}
+.sched-icon-btn{width:40px;height:40px;border-radius:var(--r-pill);border:1px solid var(--border-subtle);background:var(--surface);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
+.sched-icon-btn.transparent{background:transparent;border-color:transparent;}
+
+/* ── BUILDER ── */
+.builder-item{background:var(--bg);border-radius:14px;padding:12px;margin-bottom:8px;}
+.b-top{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
+.b-name{font-weight:600;flex:1;font-size:14px;}
+.b-mini-row{display:flex;gap:8px;align-items:flex-end;}
+.mini-field{display:flex;flex-direction:column;gap:4px;flex:1;}
+.mini-field label{font-size:10px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.03em;}
+.mini-inp{width:100%;padding:8px 12px;border-radius:var(--r-pill);border:1px solid var(--border-subtle);background:var(--surface);box-shadow:var(--shadow-input);font-size:15px;color:var(--ink);}
+.icon-btn{background:none;border:none;color:var(--ink-soft);font-size:13px;padding:6px 8px;border-radius:8px;cursor:pointer;}
+.stepper{display:flex;align-items:center;gap:14px;}
+.stepper button{width:38px;height:38px;border-radius:50%;border:1.5px solid var(--border);background:var(--surface);font-size:18px;font-weight:700;color:var(--ink);display:flex;align-items:center;justify-content:center;}
+.stepper-val{font-size:20px;font-weight:700;min-width:24px;text-align:center;}
+.search-input{width:100%;padding:9px 16px;border-radius:var(--r-pill);border:1px solid var(--border-subtle);background:var(--surface);box-shadow:var(--shadow-input);font-size:15px;margin-bottom:10px;}
+.picker-results{max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:14px;margin-bottom:10px;}
+.picker-results .prow{padding:10px 12px;border-bottom:1px solid var(--border-row);font-size:14px;display:flex;justify-content:space-between;align-items:center;}
+.picker-results .prow:last-child{border-bottom:none;}
+.section-title{font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);margin:18px 0 10px;}
+.check-row{display:flex;align-items:center;gap:9px;font-weight:700;font-size:14.5px;margin-bottom:12px;}
+.pill-chk{width:24px;height:24px;border-radius:12px;border:1px solid #c2c2c2;background:var(--surface);flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.pill-chk.on{background:var(--accent);border-color:var(--accent);}
+
+/* ── MODAL ── */
+.modal-backdrop{position:fixed;inset:0;background:rgba(28,28,30,.35);display:none;align-items:flex-end;justify-content:center;z-index:100;}
+.modal-backdrop.shown{display:flex;}
+.modal{background:var(--surface);border-radius:28px 28px 0 0;padding:24px 20px calc(24px + env(safe-area-inset-bottom));width:100%;max-width:480px;max-height:88vh;overflow-y:auto;}
+@media(min-width:640px){.modal-backdrop{align-items:center;}.modal{border-radius:24px;max-height:84vh;}}
+.modal h2{font-family:var(--fd);font-size:20px;margin:0 0 18px;}
+.modal-actions{display:flex;gap:10px;margin-top:20px;}
+.modal-actions>*{flex:1;}
+
+/* ── PROGRESS PHOTOS ── */
+.photo-row{display:flex;gap:12px;height:165px;margin-bottom:14px;}
+.photo-cell{flex:1;display:flex;flex-direction:column;gap:5px;align-items:center;}
+.photo-box{flex:1;width:100%;border:1px solid var(--border-subtle);border-radius:24px;background:var(--surface);display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer;position:relative;}
+.photo-box input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;}
+.photo-box .cam-icon{width:24px;height:24px;opacity:.4;stroke:var(--ink-soft);pointer-events:none;}
+.photo-box img.preview{width:100%;height:100%;object-fit:cover;display:none;}
+.photo-box.has-photo .cam-icon{display:none;}
+.photo-box.has-photo img.preview{display:block;}
+
+/* ── PROGRESS CARDS ── */
+.pc-card{background:var(--surface);border-radius:var(--r-card);overflow:hidden;margin-bottom:14px;box-shadow:var(--shadow-card);}
+.pc-photos{display:flex;gap:8px;height:165px;padding:8px;}
+.pc-photo-cell{flex:1;display:flex;flex-direction:column;gap:5px;align-items:center;}
+.pc-ph-label{font-size:11px;font-weight:700;color:var(--ink-soft);letter-spacing:.03em;text-transform:uppercase;}
+.pc-photo-box{flex:1;width:100%;border:1px solid var(--border-subtle);border-radius:22px;background:var(--bg);display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.pc-photo-box img{width:100%;height:100%;object-fit:cover;display:block;}
 .pc-body{padding:14px 16px;}
 .pc-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
-.pc-date{font-family:var(--fd);font-size:16px;font-weight:700;color:var(--ink);}
-.pc-delete{font-size:12px;font-weight:600;color:var(--ink-faint);background:none;border:none;padding:4px 8px;border-radius:6px;}
-.pc-delete:hover{background:var(--canvas);color:var(--ink);}
+.pc-date{font-family:var(--fd);font-size:16px;font-weight:700;}
+.pc-delete{background:none;border:none;width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;stroke:var(--ink-soft);}
 .pc-meas-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;}
-.pc-meas-row{display:flex;justify-content:space-between;align-items:baseline;padding:4px 0;border-bottom:1px solid var(--border);}
+.pc-meas-row{display:flex;justify-content:space-between;align-items:baseline;padding:4px 0;border-bottom:1px solid var(--border-light,#f1efee);}
 .pc-meas-row:last-child{border-bottom:none;}
 .pc-meas-key{font-size:12px;color:var(--ink-soft);}
-.pc-meas-val{font-family:var(--fm);font-size:13px;font-weight:700;color:var(--ink);}
+.pc-meas-val{font-family:var(--fm);font-size:13px;font-weight:700;}
 
-.compare-angle-row{display:flex;gap:8px;margin-bottom:14px;}
-.compare-angle-row button{flex:1;padding:8px;border-radius:var(--r-sm);border:1.5px solid var(--border);background:var(--canvas);color:var(--ink-soft);font-weight:600;font-size:13px;}
-.compare-angle-row button.active{background:var(--move);color:#fff;border-color:var(--move);}
+/* ── COMPARE ── */
+.compare-angles{display:flex;gap:8px;margin-bottom:14px;}
 .compare-selects{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
-.compare-selects select{flex:1;padding:8px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--canvas);}
-.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:4px;}
-.compare-col{}
-.compare-col img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:10px;display:block;margin-bottom:8px;}
-.compare-meas{font-size:12px;color:var(--ink-soft);padding:2px 0;}
-.compare-meas b{font-family:var(--fm);color:var(--ink);}
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.compare-col img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:24px;background:var(--bg);display:block;margin-bottom:8px;}
+.compare-meas{font-size:11.5px;display:flex;justify-content:space-between;padding:2px 0;}
+.compare-meas span{color:var(--ink-soft);}
+.compare-meas b{font-family:var(--fm);font-size:12px;color:var(--ink);}
+.compare-photo-ph{width:100%;aspect-ratio:3/4;border-radius:24px;background:var(--bg);margin-bottom:8px;}
 
-/* ── toast ── */
-.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:30px;font-size:13.5px;z-index:400;opacity:0;pointer-events:none;transition:opacity .25s;max-width:86vw;text-align:center;}
+/* ── SECTION NAV BTN ── */
+.section-nav-btn{display:flex;align-items:center;justify-content:space-between;width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-pill);padding:6px 16px;font-size:15px;font-weight:600;color:var(--ink);cursor:pointer;margin-bottom:8px;}
+
+/* ── EXECUTION ── */
+#execScreen{position:fixed;inset:0;background:#3E1F3B;color:#fff;z-index:300;display:none;flex-direction:column;}
+#execScreen.rest{background:var(--ink);}
+#execScreen.shown{display:flex;}
+.exec-prog{height:5px;background:rgba(255,255,255,.2);flex-shrink:0;}
+.exec-prog i{display:block;height:100%;background:var(--accent);transition:width .3s;}
+.exec-scroll{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px 22px 16px;text-align:center;gap:14px;}
+.exec-name{font-family:var(--fd);font-size:24px;font-weight:700;}
+.exec-note{font-size:13.5px;opacity:.75;max-width:280px;}
+.exec-big{font-family:var(--fm);font-size:60px;font-weight:700;line-height:1;}
+.exec-gif{width:min(60vw,200px);height:min(60vw,200px);border-radius:20px;object-fit:cover;background:rgba(255,255,255,.08);}
+.exec-controls{flex-shrink:0;padding:12px 20px calc(12px + env(safe-area-inset-bottom));background:rgba(0,0,0,.15);display:flex;flex-direction:column;align-items:center;gap:10px;}
+.exec-count{font-size:12px;opacity:.8;font-family:var(--fm);}
+.exec-btns{display:flex;gap:10px;width:100%;max-width:380px;}
+.exec-btns button{flex:1;border:none;border-radius:var(--r-btn);padding:13px 8px;font-weight:700;font-size:13px;color:#fff;background:rgba(255,255,255,.2);text-align:center;}
+.exec-btns button.main{background:var(--accent);}
+
+/* ── EMPTY / TOAST ── */
+.empty-state{text-align:center;padding:40px 16px;color:var(--ink-soft);}
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 20px;border-radius:var(--r-pill);font-size:13.5px;z-index:400;opacity:0;pointer-events:none;transition:opacity .25s;max-width:86vw;text-align:center;}
 .toast.shown{opacity:1;}
-@media(min-width:880px){.toast{bottom:24px;}}
-
-/* ── gear icon ── */
-.gear-btn{font-size:20px;padding:9px 13px;border-radius:11px;background:var(--canvas);color:var(--ink);}
 </style>
 </head>
 <body>
-
+<div class="blob-wrap"></div>
 <div id="pinGate">
-  <svg width="64" height="64" viewBox="0 0 64 64"><circle cx="32" cy="32" r="27" fill="none" stroke="#8C6FA8" stroke-width="5" stroke-dasharray="170" stroke-linecap="round" transform="rotate(-90 32 32)"/></svg>
-  <div class="pin-box">
-    <h1 class="display">Журнал тіла</h1>
-    <input id="pinInput" type="password" inputmode="numeric" maxlength="8" placeholder="••••">
+  <div class="pin-blob"></div>
+  <div class="pin-app-name">Kinetix</div>
+  <div class="pin-form">
+    <div class="pin-hint">Введіть пароль</div>
+    <input id="pinInput" class="pill-input" type="password" inputmode="numeric" maxlength="8" placeholder="• • • •" style="font-family:var(--fa);font-size:20px;font-weight:700;text-align:center;letter-spacing:4.8px">
     <div class="pin-error" id="pinError"></div>
-    <button class="btn block" onclick="tryPin()">Увійти</button>
+    <button class="btn-p block" onclick="tryPin()" style="font-family:var(--fa);font-weight:700;font-size:16px">Увійти</button>
   </div>
 </div>
-
 <div id="app">
-  <div class="shell">
-    <nav class="sidenav" id="sidenav"></nav>
-    <main id="view"></main>
-  </div>
+  <main id="view"></main>
   <nav class="bottomnav" id="bottomnav"></nav>
 </div>
-
 <div class="modal-backdrop" id="modalBackdrop"><div class="modal" id="modalBody"></div></div>
 <div id="execScreen"></div>
 <div class="toast" id="toast"></div>
-
 <script>
-/* ═══ CONFIG ═══ */
-const SUPABASE_URL = "https://sbymgniaktlrjlqqlipv.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNieW1nbmlha3RscmpscXFsaXB2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwMTU2ODgsImV4cCI6MjA5NzU5MTY4OH0.4nd1jpwX1IbgTkFAIDP7TrOJW9oB4aKR1W6B94Y7uh8";
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-const DAY_NAMES = ["Понеділок","Вівторок","Середа","Четвер","П'ятниця","Субота","Неділя"];
-const DAY_SHORT = ["Пн","Вт","Ср","Чт","Пт","Сб","Нд"];
-const MUSCLE_GROUPS = ["Сідниці","Ноги","Спина","Груди","Плечі","Руки","Прес/кор","Все тіло"];
-const WORKOUT_TYPES = ["Силове — загальне","Силове — ноги","Силове — сідниці","Силове — спина","Силове — груди та плечі","Розігрів","Заминка","Кардіо","Розтяжка","Інше"];
-const NAV = [
-  {id:"home",label:"Сьогодні"},
-  {id:"workouts",label:"Тренування"},
-  {id:"progress",label:"Прогрес"},
-];
-const KICKER_LABELS = {rest:"Відпочинок",rest_round:"Між сетами",warmup:"Розігрів",cooldown:"Заминка"};
-
-/* ═══ STATE ═══ */
-let state = {
-  view:"home",
-  exercises:[],careActions:[],workouts:[],scheduleItems:[],completions:[],progressEntries:[],
-  editingWorkout:null,exec:null,showExercisePicker:false,
-  selectedDayDate:null,weekOffset:0,
-  progressSubView:"main",progressHistoryTab:"history",compareAngle:"front",compareA:null,compareB:null,
-  tmpCustomFields:[],
+const SB_URL="https://sbymgniaktlrjlqqlipv.supabase.co";
+const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNieW1nbmlha3RscmpscXFsaXB2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwMTU2ODgsImV4cCI6MjA5NzU5MTY4OH0.4nd1jpwX1IbgTkFAIDP7TrOJW9oB4aKR1W6B94Y7uh8";
+const sb=window.supabase.createClient(SB_URL,SB_KEY);
+const DAY_NAMES=["Понеділок","Вівторок","Середа","Четвер","П'ятниця","Субота","Неділя"];
+const MUSCLE_GROUPS=["Сідниці","Ноги","Спина","Груди","Плечі","Руки","Прес/кор","Все тіло"];
+const WORKOUT_TYPES=["Силове — загальне","Силове — ноги","Силове — сідниці","Силове — спина","Силове — груди та плечі","Розігрів","Заминка","Кардіо","Розтяжка","Інше"];
+const KICKER_LABELS={rest:"Відпочинок",rest_round:"Між сетами",warmup:"Розігрів",cooldown:"Заминка"};
+const NAV=[{id:"home",label:"Сьогодні"},{id:"workouts",label:"Тренування"},{id:"progress",label:"Прогрес"}];
+const NAV_ICONS={
+  home:`<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
+  workouts:`<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round"><path d="M6 4v16M18 4v16M2 8h4M18 8h4M2 16h4M18 16h4"/></svg>`,
+  progress:`<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round"><polyline points="3 17 9 11 13 15 21 7"/><line x1="3" y1="21" x2="21" y2="21"/></svg>`
 };
+const penIcon=`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`;
+const gearIcon=`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>`;
+const trashIcon=`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>`;
+const camIcon=`<svg class="cam-icon" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>`;
+const xIcon=`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+const plusIcon=`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
+const chevronLeft=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>`;
+const restoreIcon=`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>`;
+const checkIcon=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>`;
 
-/* ═══ HELPERS ═══ */
-function todayDate(){ return new Date(); }
-function toDateStr(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
-function isoDay(d){ return (d.getDay()+6)%7; }
-function fmtShortDate(str){ if(!str) return ""; const d=new Date(str+"T00:00:00"); return d.toLocaleDateString("uk-UA",{day:"2-digit",month:"2-digit",year:"numeric"}); }
-function fmtDateLong(str){ if(!str) return ""; const d=new Date(str+"T00:00:00"); return d.toLocaleDateString("uk-UA",{day:"numeric",month:"long",year:"numeric"}); }
-function fmtDuration(sec){ return sec<60?`${sec} с`:`${Math.round(sec/60)} хв`; }
-function calcWorkoutSeconds(w){
-  let hasReps=false,total=0;
-  (w.items||[]).forEach(it=>{ const occ=it.repeat_count||1; const base=it.type==="time"?(it.duration_seconds||0):((it.reps||0)*3); if(it.type==="reps") hasReps=true; total+=occ*(base+(it.rest_after_seconds||0)); });
-  total*=(w.rounds||1);
-  if((w.rounds||1)>1) total+=(w.rounds-1)*(w.rest_between_rounds_seconds||0);
-  if(w.warmup_enabled) total+=(w.warmup_seconds||0);
-  if(w.cooldown_enabled) total+=(w.cooldown_seconds||0);
-  return {seconds:total,approx:hasReps};
-}
-function ringSVG({size=64,stroke=7,percent=0,color="#8C6FA8",track="rgba(0,0,0,.08)"}){
-  const r=(size-stroke)/2,c=2*Math.PI*r,off=c*(1-Math.min(percent,1));
-  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${track}" stroke-width="${stroke}"/><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-dasharray="${c}" stroke-dashoffset="${off}" stroke-linecap="round" transform="rotate(-90 ${size/2} ${size/2})" style="transition:stroke-dashoffset .3s"/></svg>`;
-}
-function toast(msg){ const t=document.getElementById("toast"); t.textContent=msg; t.classList.add("shown"); clearTimeout(window.__tt); window.__tt=setTimeout(()=>t.classList.remove("shown"),2600); }
-function openModal(html){ document.getElementById("modalBody").innerHTML=html; document.getElementById("modalBackdrop").classList.add("shown"); }
-function closeModal(){ document.getElementById("modalBackdrop").classList.remove("shown"); }
-document.getElementById("modalBackdrop").addEventListener("click",e=>{ if(e.target.id==="modalBackdrop") closeModal(); });
+let state={view:"home",exercises:[],careActions:[],workouts:[],scheduleItems:[],completions:[],progressEntries:[],editingWorkout:null,exec:null,showExercisePicker:false,progressHistoryTab:"history",compareAngle:"front",compareA:null,compareB:null,tmpCustomFields:[],libraryTab:"exercises"};
 
-/* ═══ WEEK HELPERS ═══ */
-function getWeekDates(weekOffset){
-  const today = todayDate();
-  const dow = isoDay(today);
-  const monday = new Date(today);
-  monday.setDate(today.getDate()-dow+weekOffset*7);
-  return Array.from({length:7},(_,i)=>{ const d=new Date(monday); d.setDate(monday.getDate()+i); return d; });
-}
-function selectedDate(){
-  return state.selectedDayDate || toDateStr(todayDate());
-}
-function selectedDayOfWeek(){
-  return isoDay(new Date(selectedDate()+"T00:00:00"));
-}
+function todayDate(){return new Date();}
+function toDateStr(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;}
+function isoDay(d){return (d.getDay()+6)%7;}
+function fmtDateLong(str){if(!str)return"";const d=new Date(str+"T00:00:00");return d.toLocaleDateString("uk-UA",{day:"numeric",month:"long",year:"numeric"});}
+function fmtShortDate(str){if(!str)return"";const d=new Date(str+"T00:00:00");return d.toLocaleDateString("uk-UA",{day:"2-digit",month:"2-digit",year:"numeric"});}
+function fmtDuration(s){return s<60?`${s} с`:`${Math.round(s/60)} хв`;}
+function calcWorkoutSec(w){let hr=false,tot=0;(w.items||[]).forEach(it=>{const occ=it.repeat_count||1;const base=it.type==="time"?(it.duration_seconds||0):((it.reps||0)*3);if(it.type==="reps")hr=true;tot+=occ*(base+(it.rest_after_seconds||0));});tot*=(w.rounds||1);if((w.rounds||1)>1)tot+=(w.rounds-1)*(w.rest_between_rounds_seconds||0);if(w.warmup_enabled)tot+=(w.warmup_seconds||0);if(w.cooldown_enabled)tot+=(w.cooldown_seconds||0);return{seconds:tot,approx:hr};}
+function ringSVG(pct){const r=27,c=2*Math.PI*r,off=c*(1-Math.min(pct,1));return `<svg width="64" height="64" viewBox="0 0 64 64"><circle cx="32" cy="32" r="${r}" fill="none" stroke="var(--border)" stroke-width="7"/><circle cx="32" cy="32" r="${r}" fill="none" stroke="var(--accent)" stroke-width="7" stroke-dasharray="${c}" stroke-dashoffset="${off}" stroke-linecap="round" transform="rotate(-90 32 32)" style="transition:stroke-dashoffset .3s"/></svg>`;}
+function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("shown");clearTimeout(window.__tt);window.__tt=setTimeout(()=>t.classList.remove("shown"),2600);}
+function openModal(html){document.getElementById("modalBody").innerHTML=html;document.getElementById("modalBackdrop").classList.add("shown");}
+function closeModal(){document.getElementById("modalBackdrop").classList.remove("shown");}
+document.getElementById("modalBackdrop").addEventListener("click",e=>{if(e.target.id==="modalBackdrop")closeModal();});
 
-/* ═══ PIN ═══ */
 async function tryPin(){
-  const val=document.getElementById("pinInput").value.trim();
-  const errEl=document.getElementById("pinError");
-  if(!val){errEl.textContent="Введи PIN";return;}
-  const {data,error}=await sb.from("app_settings").select("pin_code").eq("id",1).single();
+  const val=document.getElementById("pinInput").value.trim();const errEl=document.getElementById("pinError");
+  if(!val){errEl.textContent="Введи пароль";return;}
+  const{data,error}=await sb.from("app_settings").select("pin_code").eq("id",1).single();
   if(error){errEl.textContent="Помилка з'єднання";return;}
-  if(data.pin_code===val){ document.getElementById("pinGate").classList.add("hidden"); document.getElementById("app").classList.add("shown"); boot(); }
-  else errEl.textContent="Невірний PIN";
+  if(data.pin_code===val){document.getElementById("pinGate").classList.add("hidden");document.getElementById("app").classList.add("shown");boot();}
+  else errEl.textContent="Невірний пароль";
 }
 document.getElementById("pinInput").addEventListener("keydown",e=>{if(e.key==="Enter")tryPin();});
 
-/* ═══ BOOT ═══ */
-async function boot(){ state.selectedDayDate=toDateStr(todayDate()); renderNav(); await loadAll(); render(); }
+async function boot(){renderNav();await loadAll();render();}
 async function loadAll(){
-  const [ex,care,wk,sch,comp,prog]=await Promise.all([
-    sb.from("exercises").select("*").order("name"),
-    sb.from("care_actions").select("*").order("name"),
-    sb.from("workouts").select("*, workout_items(*, exercises(name,type))").order("name"),
-    sb.from("schedule_items").select("*").order("order_index"),
-    sb.from("daily_completions").select("*"),
-    sb.from("progress_entries").select("*").order("entry_date",{ascending:false}),
-  ]);
-  state.exercises=ex.data||[];
-  state.careActions=care.data||[];
+  const[ex,care,wk,sch,comp,prog]=await Promise.all([sb.from("exercises").select("*").order("name"),sb.from("care_actions").select("*").order("name"),sb.from("workouts").select("*, workout_items(*, exercises(name,type))").order("name"),sb.from("schedule_items").select("*").order("order_index"),sb.from("daily_completions").select("*"),sb.from("progress_entries").select("*").order("entry_date",{ascending:false})]);
+  state.exercises=ex.data||[];state.careActions=care.data||[];
   state.workouts=(wk.data||[]).map(w=>({...w,items:(w.workout_items||[]).map(it=>({id:it.id,exercise_id:it.exercise_id,order_index:it.order_index,name:it.exercises?.name,type:it.exercises?.type,duration_seconds:it.duration_seconds,reps:it.reps,rest_after_seconds:it.rest_after_seconds,repeat_count:it.repeat_count||1})).sort((a,b)=>a.order_index-b.order_index)}));
-  state.scheduleItems=sch.data||[];
-  state.completions=comp.data||[];
-  state.progressEntries=prog.data||[];
+  state.scheduleItems=sch.data||[];state.completions=comp.data||[];state.progressEntries=prog.data||[];
 }
 
-/* ═══ NAV ═══ */
-function navActive(id){
-  if(id==="workouts") return ["workouts","workoutEditor","library"].includes(state.view);
-  if(id==="progress") return ["progress","progressHistory"].includes(state.view);
-  return state.view===id;
-}
-function renderNav(){
-  document.getElementById("sidenav").innerHTML=`<div class="brand">Журнал тіла</div>`+NAV.map(n=>`<button class="${navActive(n.id)?"active":""}" onclick="goView('${n.id}')">${n.label}</button>`).join("");
-  document.getElementById("bottomnav").innerHTML=NAV.map(n=>`<button class="${navActive(n.id)?"active":""}" onclick="goView('${n.id}')"><span class="dot"></span>${n.label}</button>`).join("");
-}
-function goView(v){ state.view=v; if(v==="progress") state.progressSubView="main"; render(); }
+function navActive(id){if(id==="workouts")return["workouts","workoutEditor","library"].includes(state.view);if(id==="progress")return["progress","progressHistory"].includes(state.view);return state.view===id;}
+function renderNav(){document.getElementById("bottomnav").innerHTML=`<div class="nav-pill">${NAV.map(n=>`<button class="nav-tab${navActive(n.id)?" active":""}" onclick="goView('${n.id}')">${NAV_ICONS[n.id]}<span class="nav-label">${n.label}</span></button>`).join("")}</div>`;}
+function goView(v){state.view=v;if(v==="progress"){state.progressHistoryTab="history";}render();}
 
-/* ═══ FOCUS PRESERVATION ═══ */
 function render(){
-  const root=document.getElementById("view");
-  const active=document.activeElement;
-  let fid=null,ss=null,se=null;
-  if(active&&root.contains(active)&&active.id){ fid=active.id; if(typeof active.selectionStart==="number"){ss=active.selectionStart;se=active.selectionEnd;} }
+  const root=document.getElementById("view");const active=document.activeElement;let fid=null,ss=null,se=null;
+  if(active&&root.contains(active)&&active.id){fid=active.id;if(typeof active.selectionStart==="number"){ss=active.selectionStart;se=active.selectionEnd;}}
   renderNav();
-  const map={home:renderHome,workouts:renderWorkouts,workoutEditor:renderWorkoutEditor,library:renderLibrary,progress:renderProgress,progressHistory:renderProgressHistory};
+  const map={home:renderHome,workouts:renderWorkouts,workoutEditor:renderWorkoutEditor,library:renderLibrary,schedule:renderSchedule,progress:renderProgress,progressHistory:renderProgressHistory};
   root.innerHTML=map[state.view]?map[state.view]():"";
-  if(fid){ const el=document.getElementById(fid); if(el){el.focus();if(ss!=null&&el.setSelectionRange){try{el.setSelectionRange(ss,se);}catch(e){}}} }
+  if(fid){const el=document.getElementById(fid);if(el){el.focus();if(ss!=null&&el.setSelectionRange){try{el.setSelectionRange(ss,se);}catch(e){}}}}
 }
 
-/* ═══ HOME ═══ */
-function scheduleForDayDate(dateStr){
-  const dow = isoDay(new Date(dateStr+"T00:00:00"));
-  return state.scheduleItems.filter(s=>s.day_of_week===dow).sort((a,b)=>a.order_index-b.order_index);
-}
-function isCompletedOn(scheduleItemId,dateStr){
-  return state.completions.some(c=>c.completion_date===dateStr&&c.schedule_item_id===scheduleItemId);
-}
-function computeStreak(){
-  const dates=[...new Set(state.completions.map(c=>c.completion_date))].sort().reverse();
-  if(!dates.length) return 0;
-  const today=toDateStr(todayDate());
-  let cursor=new Date(todayDate());
-  if(!dates.includes(today)) cursor.setDate(cursor.getDate()-1);
-  let streak=0;
-  while(dates.includes(toDateStr(cursor))){ streak++; cursor.setDate(cursor.getDate()-1); }
-  return streak;
-}
+/* ── HOME ── */
+function schedForDate(dateStr){const dow=isoDay(new Date(dateStr+"T00:00:00"));return state.scheduleItems.filter(s=>s.day_of_week===dow).sort((a,b)=>a.order_index-b.order_index);}
+function isDoneOn(sid,date){return state.completions.some(c=>c.completion_date===date&&c.schedule_item_id===sid);}
+function computeStreak(){const dates=[...new Set(state.completions.map(c=>c.completion_date))].sort().reverse();if(!dates.length)return 0;const today=toDateStr(todayDate());let cursor=new Date(todayDate());if(!dates.includes(today))cursor.setDate(cursor.getDate()-1);let s=0;while(dates.includes(toDateStr(cursor))){s++;cursor.setDate(cursor.getDate()-1);}return s;}
 function renderHome(){
-  const today=toDateStr(todayDate());
-  const selDate=selectedDate();
-  const weekDates=getWeekDates(state.weekOffset);
-  const streak=computeStreak();
-  const todayItems=scheduleForDayDate(today);
-  const todayDone=todayItems.filter(i=>isCompletedOn(i.id,today)).length;
-  const pct=todayItems.length?Math.round(todayDone/todayItems.length*100):0;
-
-  const weekStrip=weekDates.map(d=>{
-    const ds=toDateStr(d);
-    const dow=isoDay(d);
-    const isToday=ds===today;
-    const isSel=ds===selDate;
-    const hasItems=state.scheduleItems.some(s=>s.day_of_week===dow);
-    return `<button class="day-pill${isSel?" active":""}${isToday&&!isSel?" today-ring":""}" onclick="selectDay('${ds}')">
-      <span class="dp-wd">${DAY_SHORT[dow]}</span>
-      <span class="dp-d">${d.getDate()}</span>
-      <span class="dp-dot ${hasItems?"has-items":""}"></span>
-    </button>`;
+  const today=toDateStr(todayDate());const streak=computeStreak();
+  const items=schedForDate(today);const done=items.filter(i=>isDoneOn(i.id,today)).length;const pct=items.length?Math.round(done/items.length*100):0;
+  const dateLabel=new Date(today+"T00:00:00").toLocaleDateString("uk-UA",{weekday:"long",day:"numeric",month:"long"});
+  const rows=items.length===0?`<div class="empty-state">Нічого не заплановано. Натисни ⚙ для налаштування розкладу.</div>`:items.map(it=>{
+    const isW=it.item_type==="workout";const ref=isW?state.workouts.find(w=>w.id===it.workout_id):state.careActions.find(c=>c.id===it.care_action_id);
+    const done2=isDoneOn(it.id,today);const name=ref?ref.name:"(видалено)";
+    let sub=isW&&ref?(()=>{const c=calcWorkoutSec(ref);return `${ref.workout_type?ref.workout_type+" · ":""}${ref.items.length} вправ · ${c.approx?"≈ ":""}${fmtDuration(c.seconds)}`;})():"доглядова дія";
+    return `<div class="plan-row">
+      <div class="plan-check${done2?" done":""}" onclick="onCheckTap('${it.id}','${today}',${done2})">${done2?checkIcon:""}</div>
+      <div class="plan-meta"><div class="plan-name">${name}</div><div class="plan-sub">${sub}</div></div>
+      ${done2?`<button class="plan-restore">${restoreIcon}</button>`:(isW?`<button class="plan-start" onclick="startFromPlan('${it.id}')">Почати</button>`:`<div style="width:40px"></div>`)}
+    </div>`;
   }).join("");
-
-  const selItems=scheduleForDayDate(selDate);
-  const selDow=selectedDayOfWeek();
-  const selDateLabel=new Date(selDate+"T00:00:00").toLocaleDateString("uk-UA",{weekday:"long",day:"numeric",month:"long"});
-
-  let planRows="";
-  if(selItems.length===0){
-    planRows=`<div class="empty-state"><div class="display">Нічого не заплановано</div>Натисни «+», щоб додати</div>`;
-  } else {
-    planRows=selItems.map(it=>{
-      const isWorkout=it.item_type==="workout";
-      const ref=isWorkout?state.workouts.find(w=>w.id===it.workout_id):state.careActions.find(c=>c.id===it.care_action_id);
-      const checked=isCompletedOn(it.id,selDate);
-      const cls=isWorkout?"move":"care";
-      const name=ref?ref.name:"(видалено)";
-      let sub="доглядова дія";
-      if(isWorkout&&ref){ const calc=calcWorkoutSeconds(ref); sub=`${ref.items.length} вправ · ${calc.approx?"≈ ":""}${fmtDuration(calc.seconds)}`; }
-      return `<div class="plan-item">
-        <div class="plan-check ${checked?"done "+cls:""}" onclick="onCheckboxTap('${it.id}','${selDate}',${checked})">${checked?"✓":""}</div>
-        <div class="meta"><div class="name">${name}</div><div class="sub">${sub}</div></div>
-        ${isWorkout?`<button class="btn sm" onclick="startFromPlan('${it.id}')">Почати</button>`:""}
-        <button class="icon-btn" onclick="removeScheduleItem('${it.id}')">✕</button>
-      </div>`;
-    }).join("");
-  }
-
   return `
-    <div class="today-head">
-      <div class="ring-wrap">
-        ${ringSVG({percent:Math.min(streak/30,1),color:"#8C6FA8"})}
-        <div class="ring-center"><span style="font-family:var(--fm);font-weight:700;font-size:18px">${streak}</span></div>
+    <div class="streak-row">
+      <div class="ring-wrap">${ringSVG(Math.min(streak/30,1))}<div class="ring-center"><span style="font-family:var(--fm);font-weight:700;font-size:18px">${streak}</span></div></div>
+      <div><div style="font-family:var(--fd);font-weight:700;font-size:17px">днів поспіль</div><div style="font-size:13px;color:var(--ink-soft)">будь-яка виконана дія з плану</div></div>
+    </div>
+    <div class="progress-bar"><i style="width:${pct}%"></i></div>
+    <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:2px">${done} з ${items.length} виконано сьогодні</div>
+    <div class="day-head">
+      <h3 class="day-title">${dateLabel}</h3>
+      <button class="topbar-icon" onclick="state.view='schedule';render()">${gearIcon}</button>
+    </div>
+    <div class="plan-card">${rows}</div>
+  `;
+}
+async function onCheckTap(sid,date,done){
+  if(done){await sb.from("daily_completions").delete().eq("completion_date",date).eq("schedule_item_id",sid);state.completions=state.completions.filter(c=>!(c.completion_date===date&&c.schedule_item_id===sid));}
+  else{const{data}=await sb.from("daily_completions").insert({completion_date:date,schedule_item_id:sid}).select().single();if(data)state.completions.push(data);}
+  render();
+}
+function startFromPlan(sid){const item=state.scheduleItems.find(s=>s.id===sid);const wo=state.workouts.find(w=>w.id===item?.workout_id);if(!wo){toast("Тренування не знайдено");return;}startExecution(wo,sid);}
+
+/* ── SCHEDULE (new design) ── */
+function renderSchedule(){
+  const allOptions=()=>[...state.workouts.map(w=>`<option value="workout_${w.id}">${w.name}</option>`), ...state.careActions.map(c=>`<option value="care_${c.id}">${c.name}</option>`)].join("");
+  const days=DAY_NAMES.map((dayName,dow)=>{
+    const items=state.scheduleItems.filter(s=>s.day_of_week===dow).sort((a,b)=>a.order_index-b.order_index);
+    let leftRows="",rightBtns="";
+    if(items.length===0){
+      leftRows=`<div class="pill-input" style="color:var(--ink-faint);display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="">Нічого не обрано <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></div>`;
+      rightBtns=`<button class="sched-icon-btn" title="Додати" onclick="openAddScheduleModal(${dow})">${plusIcon}</button>`;
+    } else {
+      items.forEach((it,i)=>{
+        const ref=it.item_type==="workout"?state.workouts.find(w=>w.id===it.workout_id):state.careActions.find(c=>c.id===it.care_action_id);
+        const name=ref?ref.name:"(видалено)";
+        leftRows+=`<div class="pill-input" style="display:flex;align-items:center;justify-content:space-between">${name} <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></div>`;
+        rightBtns+=`<button class="sched-icon-btn transparent" onclick="removeScheduleItem('${it.id}')">${xIcon}</button>`;
+      });
+      rightBtns+=`<button class="sched-icon-btn" onclick="openAddScheduleModal(${dow})">${plusIcon}</button>`;
+    }
+    return `<div class="sched-day-block">
+      <div class="sched-day-left">
+        <div class="field-label">${dayName.toUpperCase()}</div>
+        ${leftRows}
       </div>
-      <div><div class="display" style="font-size:17px">днів поспіль</div><div style="color:var(--ink-soft);font-size:13px">будь-яка виконана дія</div></div>
-    </div>
-    ${selDate===today?`<div class="progress-bar"><i style="width:${pct}%"></i></div><div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:14px">${todayDone} з ${todayItems.length} виконано сьогодні</div>`:""}
-    <div class="week-nav">
-      <button class="week-arrow" onclick="state.weekOffset--;state.selectedDayDate=toDateStr(getWeekDates(state.weekOffset)[0]);render()">‹</button>
-      <div class="week-days">${weekStrip}</div>
-      <button class="week-arrow" onclick="state.weekOffset++;state.selectedDayDate=toDateStr(getWeekDates(state.weekOffset)[0]);render()">›</button>
-    </div>
-    <div class="day-head-sec">
-      <h3 class="display" style="font-size:16px">${selDateLabel}</h3>
-      <button class="day-add-btn" onclick="openAddScheduleModal(${selDow})">+</button>
-    </div>
-    <div class="card row-list">${planRows}</div>
-  `;
-}
-function selectDay(dateStr){ state.selectedDayDate=dateStr; render(); }
-async function onCheckboxTap(scheduleItemId,dateStr,checked){ await toggleCompletion(scheduleItemId,dateStr,checked); render(); }
-async function toggleCompletion(scheduleItemId,dateStr,currentlyChecked){
-  if(currentlyChecked){
-    await sb.from("daily_completions").delete().eq("completion_date",dateStr).eq("schedule_item_id",scheduleItemId);
-    state.completions=state.completions.filter(c=>!(c.completion_date===dateStr&&c.schedule_item_id===scheduleItemId));
-  } else {
-    const {data}=await sb.from("daily_completions").insert({completion_date:dateStr,schedule_item_id:scheduleItemId}).select().single();
-    if(data) state.completions.push(data);
-  }
-}
-function startFromPlan(scheduleItemId){
-  const item=state.scheduleItems.find(s=>s.id===scheduleItemId);
-  const workout=state.workouts.find(w=>w.id===item?.workout_id);
-  if(!workout){toast("Тренування не знайдено");return;}
-  startExecution(workout,scheduleItemId);
-}
-function openAddScheduleModal(day){
-  openModal(`
-    <h2>Додати на ${DAY_NAMES[day].toLowerCase()}</h2>
-    <div class="field"><label>Тип</label>
-      <div class="seg"><button id="seg_w" class="active" onclick="setSchedType('workout')">Тренування</button><button id="seg_c" onclick="setSchedType('care')">Доглядова дія</button></div>
-    </div>
-    <div class="field"><label>Що саме</label><select id="sched_select">${state.workouts.map(w=>`<option value="${w.id}">${w.name}</option>`).join("")}</select></div>
-    <div class="modal-actions"><button class="btn ghost" onclick="closeModal()">Скасувати</button><button class="btn" onclick="saveScheduleItem(${day})">Додати</button></div>
-  `);
-  state.tmpSchedType="workout";
-}
-function setSchedType(t){
-  state.tmpSchedType=t;
-  document.getElementById("seg_w").classList.toggle("active",t==="workout");
-  document.getElementById("seg_c").classList.toggle("active",t==="care");
-  const list=t==="workout"?state.workouts:state.careActions;
-  document.getElementById("sched_select").innerHTML=list.map(x=>`<option value="${x.id}">${x.name}</option>`).join("")||`<option disabled>Спочатку додай елементи</option>`;
-}
-async function saveScheduleItem(day){
-  const refId=document.getElementById("sched_select").value;
-  if(!refId){toast("Спочатку додай елементи в базу");return;}
-  const type=state.tmpSchedType;
-  const maxOrder=Math.max(0,...state.scheduleItems.filter(s=>s.day_of_week===day).map(s=>s.order_index+1));
-  const payload={day_of_week:day,item_type:type,order_index:maxOrder,workout_id:type==="workout"?refId:null,care_action_id:type==="care"?refId:null};
-  await sb.from("schedule_items").insert(payload);
-  closeModal(); await loadAll(); render();
-}
-async function removeScheduleItem(id){
-  await sb.from("schedule_items").delete().eq("id",id);
-  await loadAll(); render();
-}
-
-/* ═══ LIBRARY ═══ */
-function renderLibrary(){
-  const tab=state.libraryTab||"exercises";
-  return `
-    <div class="topbar"><button class="icon-btn" onclick="goView('workouts')">← Тренування</button></div>
-    <div class="seg" style="margin-bottom:16px">
-      <button class="${tab==="exercises"?"active":""}" onclick="state.libraryTab='exercises';render()">Вправи</button>
-      <button class="${tab==="care"?"active":""}" onclick="state.libraryTab='care';render()">Догляд</button>
-    </div>
-    ${tab==="exercises"?renderExercisesList():renderCareList()}
-  `;
-}
-function renderExercisesList(){
-  const q=state.exSearch||"";
-  const filtered=state.exercises.filter(e=>e.name.toLowerCase().includes(q.toLowerCase()));
-  return `
-    <input id="exLibSearchInput" class="search-input" placeholder="Пошук вправи" value="${q}" oninput="state.exSearch=this.value;render()">
-    <div class="card row-list">
-      ${filtered.length?filtered.map(e=>`
-        <div class="row">
-          ${e.gif_url?`<img class="row-thumb" src="${e.gif_url}">`:`<div class="row-thumb"></div>`}
-          <div class="meta"><div class="name">${e.name}</div><div class="sub">${e.type==="time"?"на час":"на повторення"}${e.muscle_group?" · "+e.muscle_group:""}${e.note?" · "+e.note:""}</div></div>
-          <div class="row-actions"><button class="icon-btn" onclick="openExerciseModal('${e.id}')">Редаг.</button><button class="icon-btn" onclick="deleteExercise('${e.id}')">Вид.</button></div>
-        </div>`).join(""):`<div class="empty-state">Поки немає вправ</div>`}
-    </div>
-    <div class="fab-row"><button class="btn" onclick="openExerciseModal()">+ Додати вправу</button></div>
-  `;
-}
-function renderCareList(){
-  return `
-    <div class="card row-list">
-      ${state.careActions.length?state.careActions.map(c=>`
-        <div class="row">
-          <div class="row-thumb" style="display:flex;align-items:center;justify-content:center;color:var(--care);font-size:18px">●</div>
-          <div class="meta"><div class="name">${c.name}</div><div class="sub">${c.note||""}</div></div>
-          <div class="row-actions"><button class="icon-btn" onclick="openCareModal('${c.id}')">Редаг.</button><button class="icon-btn" onclick="deleteCare('${c.id}')">Вид.</button></div>
-        </div>`).join(""):`<div class="empty-state">Поки немає дій</div>`}
-    </div>
-    <div class="fab-row"><button class="btn care" onclick="openCareModal()">+ Додати дію</button></div>
-  `;
-}
-function openExerciseModal(id){
-  const ex=id?state.exercises.find(e=>e.id===id):{name:"",gif_url:"",note:"",type:"time",muscle_group:""};
-  openModal(`
-    <h2>${id?"Редагувати вправу":"Нова вправа"}</h2>
-    <div class="field"><label>Назва</label><input id="f_name" type="text" value="${ex.name||""}"></div>
-    <div class="field"><label>Посилання на гіфку</label><input id="f_gif" type="url" value="${ex.gif_url||""}"></div>
-    <div class="field"><label>М'язова група</label><select id="f_muscle"><option value="">—</option>${MUSCLE_GROUPS.map(g=>`<option value="${g}" ${ex.muscle_group===g?"selected":""}>${g}</option>`).join("")}</select></div>
-    <div class="field"><label>Нотатка</label><textarea id="f_note">${ex.note||""}</textarea></div>
-    <div class="field"><label>Тип</label>
-      <div class="seg"><button id="seg_time" class="${ex.type==="time"?"active":""}" onclick="setExType('time')">На час</button><button id="seg_reps" class="${ex.type==="reps"?"active":""}" onclick="setExType('reps')">На повторення</button></div>
-    </div>
-    <div class="modal-actions"><button class="btn ghost" onclick="closeModal()">Скасувати</button><button class="btn" onclick="saveExercise('${id||""}')">Зберегти</button></div>
-  `);
-  state.tmpExType=ex.type;
-}
-function setExType(t){ state.tmpExType=t; document.getElementById("seg_time").classList.toggle("active",t==="time"); document.getElementById("seg_reps").classList.toggle("active",t==="reps"); }
-async function saveExercise(id){
-  const payload={name:document.getElementById("f_name").value.trim(),gif_url:document.getElementById("f_gif").value.trim()||null,muscle_group:document.getElementById("f_muscle").value||null,note:document.getElementById("f_note").value.trim()||null,type:state.tmpExType||"time"};
-  if(!payload.name){toast("Вкажи назву");return;}
-  const {error}=id?await sb.from("exercises").update(payload).eq("id",id):await sb.from("exercises").insert(payload);
-  if(error){toast("Помилка: "+error.message);return;}
-  closeModal(); await loadAll(); render(); toast("Збережено");
-}
-async function deleteExercise(id){
-  if(!confirm("Видалити цю вправу?")) return;
-  const {error}=await sb.from("exercises").delete().eq("id",id);
-  if(error){toast("Неможливо видалити — вправа використовується в тренуванні");return;}
-  await loadAll(); render();
-}
-function openCareModal(id){
-  const c=id?state.careActions.find(c=>c.id===id):{name:"",note:""};
-  openModal(`<h2>${id?"Редагувати дію":"Нова доглядова дія"}</h2><div class="field"><label>Назва</label><input id="f_cname" type="text" value="${c.name||""}"></div><div class="field"><label>Нотатка</label><textarea id="f_cnote">${c.note||""}</textarea></div><div class="modal-actions"><button class="btn ghost" onclick="closeModal()">Скасувати</button><button class="btn care" onclick="saveCare('${id||""}')">Зберегти</button></div>`);
-}
-async function saveCare(id){
-  const payload={name:document.getElementById("f_cname").value.trim(),note:document.getElementById("f_cnote").value.trim()||null};
-  if(!payload.name){toast("Вкажи назву");return;}
-  const {error}=id?await sb.from("care_actions").update(payload).eq("id",id):await sb.from("care_actions").insert(payload);
-  if(error){toast("Помилка: "+error.message);return;}
-  closeModal(); await loadAll(); render(); toast("Збережено");
-}
-async function deleteCare(id){
-  if(!confirm("Видалити цю дію?")) return;
-  await sb.from("care_actions").delete().eq("id",id);
-  await loadAll(); render();
-}
-
-/* ═══ WORKOUTS ═══ */
-function renderWorkouts(){
-  return `
-    <div class="topbar"><h2 class="display">Тренування</h2><button class="icon-btn gear-btn" onclick="goView('library')" title="Вправи та догляд">⚙</button></div>
-    <div class="card row-list">
-      ${state.workouts.length?state.workouts.map(w=>{
-        const calc=calcWorkoutSeconds(w);
-        return `<div class="row">
-          <div class="row-thumb" style="display:flex;align-items:center;justify-content:center;color:var(--move);font-size:22px">◐</div>
-          <div class="meta"><div class="name">${w.name}</div><div class="sub">${w.workout_type?w.workout_type+" · ":""}${w.items.length} вправ · ${calc.approx?"≈ ":""}${fmtDuration(calc.seconds)}</div></div>
-          <div class="row-actions"><button class="icon-btn" onclick="openWorkoutEditor('${w.id}')">Редаг.</button><button class="icon-btn" onclick="deleteWorkout('${w.id}')">Вид.</button></div>
-        </div>`;
-      }).join(""):`<div class="empty-state">Поки немає тренувань</div>`}
-    </div>
-    <div class="fab-row"><button class="btn" onclick="openWorkoutEditor()">+ Нове тренування</button></div>
-  `;
-}
-async function deleteWorkout(id){
-  if(!confirm("Видалити тренування?")) return;
-  await sb.from("workouts").delete().eq("id",id);
-  await loadAll(); render();
-}
-function openWorkoutEditor(id){
-  if(id){
-    const w=state.workouts.find(w=>w.id===id);
-    state.editingWorkout={id:w.id,name:w.name,rounds:w.rounds,workout_type:w.workout_type||"",items:w.items.map(it=>({...it})),warmup_enabled:w.warmup_enabled||false,warmup_seconds:w.warmup_seconds||60,warmup_note:w.warmup_note||"",cooldown_enabled:w.cooldown_enabled||false,cooldown_seconds:w.cooldown_seconds||60,cooldown_note:w.cooldown_note||"",rest_between_rounds_seconds:w.rest_between_rounds_seconds||0};
-  } else {
-    state.editingWorkout={id:null,name:"",rounds:1,workout_type:"",items:[],warmup_enabled:false,warmup_seconds:60,warmup_note:"",cooldown_enabled:false,cooldown_seconds:60,cooldown_note:"",rest_between_rounds_seconds:0};
-  }
-  state.exPickerQuery=""; state.showExercisePicker=false; state.view="workoutEditor"; render();
-}
-function changeRounds(delta){ state.editingWorkout.rounds=Math.max(1,(state.editingWorkout.rounds||1)+delta); render(); }
-function renderWorkoutEditor(){
-  const ew=state.editingWorkout;
-  const q=state.exPickerQuery||"";
-  const results=q?state.exercises.filter(e=>e.name.toLowerCase().includes(q.toLowerCase())):[];
-  const calc=calcWorkoutSeconds(ew);
-  return `
-    <div class="topbar"><h2 class="display">${ew.id?"Редагувати":"Нове тренування"}</h2></div>
-    <div class="field"><label>Назва тренування</label><input id="w_name" type="text" value="${ew.name}" oninput="state.editingWorkout.name=this.value"></div>
-    <div class="field"><label>Тип тренування</label>
-      <select id="w_type" onchange="state.editingWorkout.workout_type=this.value">
-        <option value="">— Обери тип —</option>
-        ${WORKOUT_TYPES.map(t=>`<option value="${t}" ${ew.workout_type===t?"selected":""}>${t}</option>`).join("")}
-      </select>
-    </div>
-    <label class="check-row"><input type="checkbox" ${ew.warmup_enabled?"checked":""} onchange="state.editingWorkout.warmup_enabled=this.checked;render()"> Розігрів перед тренуванням</label>
-    ${ew.warmup_enabled?`
-      <div class="field"><label>Тривалість розігріву (сек)</label><input id="w_warmupSec" type="number" min="0" value="${ew.warmup_seconds}" oninput="state.editingWorkout.warmup_seconds=parseInt(this.value)||0"></div>
-      <div class="field"><label>Нотатка до розігріву (необов'язково)</label><textarea id="w_warmupNote" oninput="state.editingWorkout.warmup_note=this.value">${ew.warmup_note||""}</textarea></div>
-    `:""}
-    <div class="field"><label>Кількість сетів</label>
-      <div class="stepper"><button onclick="changeRounds(-1)">–</button><span class="stepper-val mono">${ew.rounds}</span><button onclick="changeRounds(1)">+</button></div>
-    </div>
-    ${ew.rounds>1?`<div class="field" style="max-width:220px"><label>Відпочинок між сетами (сек)</label><input id="w_restBetween" type="number" min="0" value="${ew.rest_between_rounds_seconds||0}" oninput="state.editingWorkout.rest_between_rounds_seconds=parseInt(this.value)||0"></div>`:""}
-    ${ew.items.length?`<div style="font-size:13px;color:var(--ink-soft);margin-bottom:10px">Орієнтовний час: ${calc.approx?"≈ ":""}${fmtDuration(calc.seconds)}</div>`:""}
-    <div class="section-title">Вправи для одного сету</div>
-    ${ew.items.length===0?`<div class="empty-state">Додай вправи нижче</div>`:""}
-    ${ew.items.map((it,idx)=>`
-      <div class="builder-item">
-        <div class="b-top">
-          <span class="b-name">${idx+1}. ${it.name}</span>
-          <button class="icon-btn" onclick="moveItem(${idx},-1)">↑</button>
-          <button class="icon-btn" onclick="moveItem(${idx},1)">↓</button>
-          <button class="icon-btn" onclick="removeItem(${idx})">✕</button>
-        </div>
-        <div class="b-mini-row">
-          ${it.type==="time"
-            ?`<div class="mini-field"><label>Час (сек)</label><input id="bi_dur_${idx}" type="number" min="1" value="${it.duration_seconds||30}" oninput="state.editingWorkout.items[${idx}].duration_seconds=parseInt(this.value)||0;render()"></div>`
-            :`<div class="mini-field"><label>Повторень</label><input id="bi_reps_${idx}" type="number" min="1" value="${it.reps||12}" oninput="state.editingWorkout.items[${idx}].reps=parseInt(this.value)||0;render()"></div>`}
-          <div class="mini-field"><label>Повторити (раз)</label><input id="bi_repeat_${idx}" type="number" min="1" value="${it.repeat_count||1}" oninput="state.editingWorkout.items[${idx}].repeat_count=parseInt(this.value)||1;render()"></div>
-          <div class="mini-field"><label>Пауза після (сек)</label><input id="bi_rest_${idx}" type="number" min="0" value="${it.rest_after_seconds||0}" oninput="state.editingWorkout.items[${idx}].rest_after_seconds=parseInt(this.value)||0;render()"></div>
-        </div>
-      </div>
-    `).join("")}
-    <div class="add-row">
-      <button class="btn ghost sm" onclick="state.showExercisePicker=!state.showExercisePicker;render()">+ Вправа</button>
-      <button class="btn ghost sm" onclick="changeRounds(1)">+ Сет</button>
-    </div>
-    ${state.showExercisePicker?`
-      <input id="exBuilderSearchInput" class="search-input" placeholder="Пошук вправи..." value="${q}" oninput="state.exPickerQuery=this.value;render()">
-      ${q?`<div class="picker-results">${results.length?results.map(e=>`<div class="prow"><span>${e.name}</span><button class="icon-btn" onclick="addItemToWorkout('${e.id}')">+ Додати</button></div>`).join(""):`<div class="prow">Нічого не знайдено</div>`}</div>`:""}
-    `:""}
-    <label class="check-row" style="margin-top:22px"><input type="checkbox" ${ew.cooldown_enabled?"checked":""} onchange="state.editingWorkout.cooldown_enabled=this.checked;render()"> Заминка після тренування</label>
-    ${ew.cooldown_enabled?`
-      <div class="field"><label>Тривалість заминки (сек)</label><input id="w_cooldownSec" type="number" min="0" value="${ew.cooldown_seconds}" oninput="state.editingWorkout.cooldown_seconds=parseInt(this.value)||0"></div>
-      <div class="field"><label>Нотатка до заминки (необов'язково)</label><textarea id="w_cooldownNote" oninput="state.editingWorkout.cooldown_note=this.value">${ew.cooldown_note||""}</textarea></div>
-    `:""}
-    <div class="modal-actions" style="margin-top:24px">
-      <button class="btn ghost" onclick="state.view='workouts';render()">Скасувати</button>
-      <button class="btn" onclick="saveWorkout()">Зберегти тренування</button>
-    </div>
-  `;
-}
-function addItemToWorkout(exerciseId){
-  const ex=state.exercises.find(e=>e.id===exerciseId);
-  state.editingWorkout.items.push({exercise_id:ex.id,name:ex.name,type:ex.type,duration_seconds:ex.type==="time"?30:null,reps:ex.type==="reps"?12:null,rest_after_seconds:15,repeat_count:1});
-  state.exPickerQuery=""; render();
-}
-function moveItem(idx,dir){ const items=state.editingWorkout.items; const j=idx+dir; if(j<0||j>=items.length) return; [items[idx],items[j]]=[items[j],items[idx]]; render(); }
-function removeItem(idx){ state.editingWorkout.items.splice(idx,1); render(); }
-async function saveWorkout(){
-  const ew=state.editingWorkout;
-  if(!ew.name.trim()){toast("Вкажи назву тренування");return;}
-  if(ew.items.length===0){toast("Додай хоча б одну вправу");return;}
-  const payload={name:ew.name,rounds:ew.rounds,workout_type:ew.workout_type||null,warmup_enabled:ew.warmup_enabled,warmup_seconds:ew.warmup_seconds||0,warmup_note:ew.warmup_note||null,cooldown_enabled:ew.cooldown_enabled,cooldown_seconds:ew.cooldown_seconds||0,cooldown_note:ew.cooldown_note||null,rest_between_rounds_seconds:ew.rest_between_rounds_seconds||0};
-  let workoutId=ew.id;
-  if(workoutId){ await sb.from("workouts").update(payload).eq("id",workoutId); await sb.from("workout_items").delete().eq("workout_id",workoutId); }
-  else { const {data}=await sb.from("workouts").insert(payload).select().single(); workoutId=data.id; }
-  const itemsPayload=ew.items.map((it,idx)=>({workout_id:workoutId,exercise_id:it.exercise_id,order_index:idx,duration_seconds:it.duration_seconds,reps:it.reps,rest_after_seconds:it.rest_after_seconds,repeat_count:it.repeat_count||1}));
-  const {error}=await sb.from("workout_items").insert(itemsPayload);
-  if(error){toast("Помилка збереження: "+error.message);return;}
-  await loadAll(); state.view="workouts"; render(); toast("Тренування збережено");
-}
-
-/* ═══ PROGRESS ═══ */
-function valsForEntry(e){
-  const v=[];
-  if(e.weight) v.push(["Вага",e.weight+" кг"]);
-  if(e.waist) v.push(["Талія",e.waist+" см"]);
-  if(e.hips) v.push(["Стегна",e.hips+" см"]);
-  if(e.chest) v.push(["Груди",e.chest+" см"]);
-  if(e.thigh) v.push(["Стегно",e.thigh+" см"]);
-  if(e.arm) v.push(["Рука",e.arm+" см"]);
-  if(e.custom_fields) Object.entries(e.custom_fields).forEach(([k,val])=>{if(k) v.push([k,val]);});
-  return v;
-}
-function renderProgress(){
-  const custom=state.tmpCustomFields||[];
-  return `
-    <div class="topbar"><h2 class="display">Прогрес</h2></div>
-    <div class="card prog-entry-form">
-      <div class="field"><label>Дата</label><input id="m_date" type="date" value="${toDateStr(todayDate())}"></div>
-      <div class="field"><label>Фото — фронт</label><input type="file" accept="image/*" id="photoFrontInput"></div>
-      <div class="field"><label>Фото — бік</label><input type="file" accept="image/*" id="photoSideInput"></div>
-      <div class="field"><label>Фото — бек</label><input type="file" accept="image/*" id="photoBackInput"></div>
-      <div class="meas-grid">
-        <div class="field"><label>Вага (кг)</label><input id="m_weight" type="number" step="0.1"></div>
-        <div class="field"><label>Талія (см)</label><input id="m_waist" type="number" step="0.1"></div>
-        <div class="field"><label>Стегна (см)</label><input id="m_hips" type="number" step="0.1"></div>
-        <div class="field"><label>Груди (см)</label><input id="m_chest" type="number" step="0.1"></div>
-        <div class="field"><label>Стегно (см)</label><input id="m_thigh" type="number" step="0.1"></div>
-        <div class="field"><label>Рука (см)</label><input id="m_arm" type="number" step="0.1"></div>
-      </div>
-      ${custom.map((c,i)=>`
-        <div class="meas-grid">
-          <div class="field"><input type="text" placeholder="Назва поля" value="${c.name}" oninput="state.tmpCustomFields[${i}].name=this.value"></div>
-          <div class="field"><input type="number" step="0.1" placeholder="Значення" value="${c.value}" oninput="state.tmpCustomFields[${i}].value=this.value"></div>
-        </div>`).join("")}
-      <button class="btn ghost sm" onclick="addCustomField()" style="margin-bottom:12px">+ Своє поле</button>
-      <button class="btn signal block" onclick="saveProgressEntry()">Зберегти запис</button>
-    </div>
-    <button class="section-nav-btn" onclick="state.view='progressHistory';state.progressHistoryTab='history';render()">
-      <span>Історія замірів</span><span class="arr">›</span>
-    </button>
-  `;
-}
-function renderProgressHistory(){
-  const tab=state.progressHistoryTab||"history";
+      <div class="sched-day-right">${rightBtns}</div>
+    </div>`;
+  }).join("");
   return `
     <div class="topbar">
-      <button class="prog-back-btn" onclick="goView('progress')">← Прогрес</button>
+      <h2>Розклад тренувань</h2>
+      <button class="close-btn" onclick="state.view='home';render()">${xIcon}</button>
     </div>
-    <div class="prog-subtabs">
-      <button class="${tab==="history"?"active":""}" onclick="state.progressHistoryTab='history';render()">Історія</button>
-      <button class="${tab==="compare"?"active":""}" onclick="state.progressHistoryTab='compare';render()">Порівняти</button>
-    </div>
-    ${tab==="history"?renderHistoryCards():renderCompare()}
+    ${days}
   `;
 }
-function renderHistoryCards(){
-  const entries=state.progressEntries;
-  if(!entries.length) return `<div class="empty-state"><div class="display">Поки немає записів</div>Додай перший запис на сторінці «Прогрес»</div>`;
-  return entries.map(e=>{
-    const vals=valsForEntry(e);
-    const photos=[{url:e.photo_front_url,label:"Фронт"},{url:e.photo_side_url,label:"Бік"},{url:e.photo_back_url,label:"Бек"}];
-    const hasAnyPhoto=photos.some(p=>p.url);
-    return `<div class="pc-card">
-      ${hasAnyPhoto?`<div class="pc-photos-strip">${photos.map(p=>p.url
-        ?`<div class="pc-photo-cell"><img src="${p.url}" loading="lazy"><div class="pc-photo-label">${p.label}</div></div>`
-        :`<div class="pc-no-photo">${p.label}</div>`
-      ).join("")}</div>`:""}
+function openAddScheduleModal(day){
+  const allItems=[...state.workouts.map(w=>({id:`workout_${w.id}`,name:w.name})),...state.careActions.map(c=>({id:`care_${c.id}`,name:c.name}))];
+  openModal(`<h2>Додати на ${DAY_NAMES[day].toLowerCase()}</h2>
+    <div class="field"><label>Вибери елемент</label><select id="sched_sel" class="pill-select"><option value="">— Обери —</option>${allItems.map(x=>`<option value="${x.id}">${x.name}</option>`).join("")}</select></div>
+    <div class="modal-actions"><button class="btn-w" onclick="closeModal()">Скасувати</button><button class="btn-p" onclick="saveScheduleItem(${day})">Додати</button></div>`);
+}
+async function saveScheduleItem(day){
+  const val=document.getElementById("sched_sel").value;if(!val){toast("Обери елемент");return;}
+  const isW=val.startsWith("workout_");const id=val.split("_").slice(1).join("_");
+  const maxOrd=Math.max(0,...state.scheduleItems.filter(s=>s.day_of_week===day).map(s=>s.order_index+1));
+  const payload={day_of_week:day,item_type:isW?"workout":"care",order_index:maxOrd,workout_id:isW?id:null,care_action_id:isW?null:id};
+  await sb.from("schedule_items").insert(payload);closeModal();await loadAll();render();
+}
+async function removeScheduleItem(id){await sb.from("schedule_items").delete().eq("id",id);await loadAll();render();}
+
+/* ── LIBRARY ── */
+function renderLibrary(){
+  const tab=state.libraryTab||"exercises";
+  return `<div class="topbar"><button class="back-btn" onclick="goView('workouts')">${chevronLeft} Тренування</button><button class="close-btn" onclick="goView('workouts')">${xIcon}</button></div>
+    <div class="seg-ctrl"><button class="${tab==="exercises"?"active":""}" onclick="state.libraryTab='exercises';render()">Вправи</button><button class="${tab==="care"?"active":""}" onclick="state.libraryTab='care';render()">Догляд</button></div>
+    ${tab==="exercises"?renderExercisesList():renderCareList()}`;
+}
+function renderExercisesList(){
+  const q=state.exSearch||"";const filtered=state.exercises.filter(e=>e.name.toLowerCase().includes(q.toLowerCase()));
+  return `<input id="exLibSearch" class="search-input" placeholder="Пошук вправи" value="${q}" oninput="state.exSearch=this.value;render()">
+    <div class="card row-list">
+      ${filtered.length?filtered.map(e=>`<div class="row"><div class="row-icon">${e.gif_url?`<img src="${e.gif_url}">`:e.muscle_group?'💪':'·'}</div><div class="row-meta"><div class="row-name">${e.name}</div><div class="row-sub">${e.type==="time"?"на час":"на повторення"}${e.muscle_group?" · "+e.muscle_group:""}</div></div><button class="row-action" onclick="openExerciseModal('${e.id}')">${penIcon}</button></div>`).join(""):`<div class="empty-state">Поки немає вправ</div>`}
+    </div>
+    <button class="btn-p block" onclick="openExerciseModal()">+ Додати вправу</button>`;
+}
+function renderCareList(){
+  return `<div class="card row-list">
+    ${state.careActions.length?state.careActions.map(c=>`<div class="row"><div class="row-icon">🌿</div><div class="row-meta"><div class="row-name">${c.name}</div><div class="row-sub">${c.note||""}</div></div><button class="row-action" onclick="openCareModal('${c.id}')">${penIcon}</button></div>`).join(""):`<div class="empty-state">Поки немає дій</div>`}
+  </div>
+  <button class="btn-p block" onclick="openCareModal()">+ Додати дію</button>`;
+}
+function openExerciseModal(id){
+  const ex=id?state.exercises.find(e=>e.id===id):{name:"",gif_url:"",note:"",type:"time",muscle_group:""};state.tmpExType=ex.type;
+  openModal(`<h2>${id?"Редагувати":"Нова вправа"}</h2>
+    <div class="field"><label>Назва</label><input id="f_name" class="pill-input" type="text" value="${ex.name||""}"></div>
+    <div class="field"><label>Гіфка (посилання)</label><input id="f_gif" class="pill-input" type="url" value="${ex.gif_url||""}"></div>
+    <div class="field"><label>М'язова група</label><select id="f_muscle" class="pill-select"><option value="">—</option>${MUSCLE_GROUPS.map(g=>`<option value="${g}" ${ex.muscle_group===g?"selected":""}>${g}</option>`).join("")}</select></div>
+    <div class="field"><label>Нотатка</label><textarea id="f_note" class="pill-textarea">${ex.note||""}</textarea></div>
+    <div class="field"><label>Тип</label><div class="seg-ctrl" style="margin:0"><button id="st" class="${ex.type==="time"?"active":""}" onclick="setExType('time')">На час</button><button id="sr" class="${ex.type==="reps"?"active":""}" onclick="setExType('reps')">На повторення</button></div></div>
+    <div class="modal-actions"><button class="btn-w" onclick="closeModal()">Скасувати</button><button class="btn-p" onclick="saveExercise('${id||""}')">Зберегти</button></div>`);
+}
+function setExType(t){state.tmpExType=t;document.getElementById("st").classList.toggle("active",t==="time");document.getElementById("sr").classList.toggle("active",t==="reps");}
+async function saveExercise(id){
+  const payload={name:document.getElementById("f_name").value.trim(),gif_url:document.getElementById("f_gif").value.trim()||null,muscle_group:document.getElementById("f_muscle").value||null,note:document.getElementById("f_note").value.trim()||null,type:state.tmpExType||"time"};
+  if(!payload.name){toast("Вкажи назву");return;}const{error}=id?await sb.from("exercises").update(payload).eq("id",id):await sb.from("exercises").insert(payload);
+  if(error){toast("Помилка: "+error.message);return;}closeModal();await loadAll();render();toast("Збережено");
+}
+function openCareModal(id){const c=id?state.careActions.find(c=>c.id===id):{name:"",note:""};openModal(`<h2>${id?"Редагувати":"Нова дія"}</h2><div class="field"><label>Назва</label><input id="f_cn" class="pill-input" type="text" value="${c.name||""}"></div><div class="field"><label>Нотатка</label><textarea id="f_cno" class="pill-textarea">${c.note||""}</textarea></div><div class="modal-actions"><button class="btn-w" onclick="closeModal()">Скасувати</button><button class="btn-p" onclick="saveCare('${id||""}')">Зберегти</button></div>`);}
+async function saveCare(id){const payload={name:document.getElementById("f_cn").value.trim(),note:document.getElementById("f_cno").value.trim()||null};if(!payload.name){toast("Вкажи назву");return;}const{error}=id?await sb.from("care_actions").update(payload).eq("id",id):await sb.from("care_actions").insert(payload);if(error){toast("Помилка: "+error.message);return;}closeModal();await loadAll();render();toast("Збережено");}
+
+/* ── WORKOUTS ── */
+function renderWorkouts(){
+  return `<div class="topbar"><h2>Тренування</h2><button class="topbar-icon" onclick="goView('library')">${gearIcon}</button></div>
+    <div class="card row-list">
+      ${state.workouts.length?state.workouts.map(w=>{const c=calcWorkoutSec(w);return`<div class="row"><div class="row-icon">${w.icon?`<img src="${w.icon}">`:(w.icon||'💪')}</div><div class="row-meta"><div class="row-name">${w.name}</div><div class="row-sub">${w.workout_type?w.workout_type+" · ":""}${w.items.length} вправ · ${c.approx?"≈ ":""}${fmtDuration(c.seconds)}</div></div><button class="row-action" onclick="openWorkoutEditor('${w.id}')">${penIcon}</button></div>`;}).join(""):`<div class="empty-state">Поки немає тренувань</div>`}
+    </div>
+    <button class="btn-p block" onclick="openWorkoutEditor()">Нове тренування</button>`;
+}
+function openWorkoutEditor(id){
+  if(id){const w=state.workouts.find(w=>w.id===id);state.editingWorkout={id:w.id,name:w.name,rounds:w.rounds,workout_type:w.workout_type||"",items:w.items.map(it=>({...it})),warmup_enabled:w.warmup_enabled||false,warmup_seconds:w.warmup_seconds||60,warmup_note:w.warmup_note||"",cooldown_enabled:w.cooldown_enabled||false,cooldown_seconds:w.cooldown_seconds||60,cooldown_note:w.cooldown_note||"",rest_between_rounds_seconds:w.rest_between_rounds_seconds||0};}
+  else state.editingWorkout={id:null,name:"",rounds:1,workout_type:"",items:[],warmup_enabled:false,warmup_seconds:60,warmup_note:"",cooldown_enabled:false,cooldown_seconds:60,cooldown_note:"",rest_between_rounds_seconds:0};
+  state.exPickerQuery="";state.showExercisePicker=false;state.view="workoutEditor";render();
+}
+function changeRounds(d){state.editingWorkout.rounds=Math.max(1,(state.editingWorkout.rounds||1)+d);render();}
+function renderWorkoutEditor(){
+  const ew=state.editingWorkout;const q=state.exPickerQuery||"";const results=q?state.exercises.filter(e=>e.name.toLowerCase().includes(q.toLowerCase())):[];const c=calcWorkoutSec(ew);
+  return `<div class="topbar"><h2>${ew.id?"Редагувати":"Нове тренування"}</h2><button class="close-btn" onclick="state.view='workouts';render()">${xIcon}</button></div>
+    <div class="field"><label>Назва тренування</label><input id="w_name" class="pill-input" type="text" value="${ew.name}" oninput="state.editingWorkout.name=this.value"></div>
+    <div class="field"><label>Тип тренування</label><select id="w_type" class="pill-select" onchange="state.editingWorkout.workout_type=this.value"><option value="">— Обери тип —</option>${WORKOUT_TYPES.map(t=>`<option value="${t}" ${ew.workout_type===t?"selected":""}>${t}</option>`).join("")}</select></div>
+    <div class="check-row"><div class="pill-chk${ew.warmup_enabled?" on":""}" onclick="state.editingWorkout.warmup_enabled=!state.editingWorkout.warmup_enabled;render()">${ew.warmup_enabled?checkIcon:""}</div>Розігрів перед тренуванням</div>
+    ${ew.warmup_enabled?`<div style="display:flex;gap:10px;margin-bottom:14px"><div class="field" style="width:130px;margin:0"><label>Тривалість (сек)</label><input id="w_ws" class="pill-input" type="number" min="0" value="${ew.warmup_seconds}" oninput="state.editingWorkout.warmup_seconds=parseInt(this.value)||0"></div><div class="field" style="flex:1;margin:0"><label>Нотатка до розігріву</label><input id="w_wn" class="pill-input" type="text" value="${ew.warmup_note||""}" oninput="state.editingWorkout.warmup_note=this.value"></div></div>`:""}
+    <div class="field"><label>Кількість сетів</label><div class="stepper"><button onclick="changeRounds(-1)">–</button><span class="stepper-val">${ew.rounds}</span><button onclick="changeRounds(1)">+</button></div></div>
+    ${ew.rounds>1?`<div class="field"><label>Відпочинок між сетами (сек)</label><input id="w_rb" class="pill-input" type="number" min="0" value="${ew.rest_between_rounds_seconds||0}" style="max-width:200px" oninput="state.editingWorkout.rest_between_rounds_seconds=parseInt(this.value)||0"></div>`:""}
+    ${ew.items.length?`<div style="font-size:13px;color:var(--ink-soft);margin-bottom:8px">≈ ${fmtDuration(c.seconds)}</div>`:""}
+    <div class="section-title">Вправи для одного сету</div>
+    ${ew.items.length===0?`<div class="empty-state" style="padding:16px 0">Додай вправи нижче</div>`:""}
+    ${ew.items.map((it,i)=>`<div class="builder-item"><div class="b-top"><span class="b-name">${i+1}. ${it.name}</span><button class="icon-btn" onclick="moveItem(${i},-1)">↑</button><button class="icon-btn" onclick="moveItem(${i},1)">↓</button><button class="icon-btn" onclick="removeItem(${i})">✕</button></div>
+      <div class="b-mini-row">
+        ${it.type==="time"?`<div class="mini-field"><label>Час (сек)</label><input id="bi_d_${i}" class="mini-inp" type="number" min="1" value="${it.duration_seconds||30}" oninput="state.editingWorkout.items[${i}].duration_seconds=parseInt(this.value)||0;render()"></div>`:
+        `<div class="mini-field"><label>Повторень</label><input id="bi_r_${i}" class="mini-inp" type="number" min="1" value="${it.reps||12}" oninput="state.editingWorkout.items[${i}].reps=parseInt(this.value)||0;render()"></div>`}
+        <div class="mini-field"><label>Повторити (раз)</label><input id="bi_rp_${i}" class="mini-inp" type="number" min="1" value="${it.repeat_count||1}" oninput="state.editingWorkout.items[${i}].repeat_count=parseInt(this.value)||1;render()"></div>
+        <div class="mini-field"><label>Пауза після (сек)</label><input id="bi_rs_${i}" class="mini-inp" type="number" min="0" value="${it.rest_after_seconds||0}" oninput="state.editingWorkout.items[${i}].rest_after_seconds=parseInt(this.value)||0;render()"></div>
+      </div></div>`).join("")}
+    <div style="display:flex;gap:10px;margin:10px 0">
+      <button class="btn-ghost" onclick="state.showExercisePicker=!state.showExercisePicker;render()">+ Вправа</button>
+      <button class="btn-ghost" onclick="changeRounds(1)">+ Сет</button>
+    </div>
+    ${state.showExercisePicker?`<input id="exBuildSearch" class="search-input" placeholder="Пошук..." value="${q}" oninput="state.exPickerQuery=this.value;render()">${q?`<div class="picker-results">${(state.exercises.filter(e=>e.name.toLowerCase().includes(q.toLowerCase()))).length?state.exercises.filter(e=>e.name.toLowerCase().includes(q.toLowerCase())).map(e=>`<div class="prow"><span>${e.name}</span><button class="icon-btn" onclick="addItemToWorkout('${e.id}')">+ Додати</button></div>`).join(""):`<div class="prow">Нічого</div>`}</div>`:""}`:""}
+    <div class="check-row" style="margin-top:20px"><div class="pill-chk${ew.cooldown_enabled?" on":""}" onclick="state.editingWorkout.cooldown_enabled=!state.editingWorkout.cooldown_enabled;render()">${ew.cooldown_enabled?checkIcon:""}</div>Заминка після тренування</div>
+    ${ew.cooldown_enabled?`<div class="field"><label>Тривалість заминки (сек)</label><input id="w_cs" class="pill-input" type="number" min="0" value="${ew.cooldown_seconds}" style="max-width:200px" oninput="state.editingWorkout.cooldown_seconds=parseInt(this.value)||0"></div>`:""}
+    <div style="display:flex;gap:10px;margin-top:20px"><button class="btn-w" style="flex:1" onclick="state.view='workouts';render()">Скасувати</button><button class="btn-p" style="flex:1" onclick="saveWorkout()">Зберегти</button></div>`;
+}
+function addItemToWorkout(eid){const ex=state.exercises.find(e=>e.id===eid);state.editingWorkout.items.push({exercise_id:ex.id,name:ex.name,type:ex.type,duration_seconds:ex.type==="time"?30:null,reps:ex.type==="reps"?12:null,rest_after_seconds:15,repeat_count:1});state.exPickerQuery="";render();}
+function moveItem(i,d){const items=state.editingWorkout.items;const j=i+d;if(j<0||j>=items.length)return;[items[i],items[j]]=[items[j],items[i]];render();}
+function removeItem(i){state.editingWorkout.items.splice(i,1);render();}
+async function saveWorkout(){
+  const ew=state.editingWorkout;if(!ew.name.trim()){toast("Вкажи назву");return;}if(ew.items.length===0){toast("Додай хоча б одну вправу");return;}
+  const payload={name:ew.name,rounds:ew.rounds,workout_type:ew.workout_type||null,warmup_enabled:ew.warmup_enabled,warmup_seconds:ew.warmup_seconds||0,warmup_note:ew.warmup_note||null,cooldown_enabled:ew.cooldown_enabled,cooldown_seconds:ew.cooldown_seconds||0,cooldown_note:ew.cooldown_note||null,rest_between_rounds_seconds:ew.rest_between_rounds_seconds||0};
+  let wid=ew.id;if(wid){await sb.from("workouts").update(payload).eq("id",wid);await sb.from("workout_items").delete().eq("workout_id",wid);}
+  else{const{data}=await sb.from("workouts").insert(payload).select().single();wid=data.id;}
+  const{error}=await sb.from("workout_items").insert(ew.items.map((it,i)=>({workout_id:wid,exercise_id:it.exercise_id,order_index:i,duration_seconds:it.duration_seconds,reps:it.reps,rest_after_seconds:it.rest_after_seconds,repeat_count:it.repeat_count||1})));
+  if(error){toast("Помилка: "+error.message);return;}await loadAll();state.view="workouts";render();toast("Тренування збережено");
+}
+
+/* ── PROGRESS ── */
+function valsForEntry(e){const v=[];if(e.weight)v.push(["Вага",e.weight+" кг"]);if(e.waist)v.push(["Талія",e.waist+" см"]);if(e.hips)v.push(["Стегна",e.hips+" см"]);if(e.chest)v.push(["Груди",e.chest+" см"]);if(e.thigh)v.push(["Стегно",e.thigh+" см"]);if(e.arm)v.push(["Рука",e.arm+" см"]);if(e.custom_fields)Object.entries(e.custom_fields).forEach(([k,val])=>{if(k)v.push([k,val]);});return v;}
+function renderProgress(){
+  const custom=state.tmpCustomFields||[];
+  return `<div class="topbar"><h2>Прогрес</h2><button class="close-btn" onclick="state.tmpCustomFields=[];render()">${xIcon}</button></div>
+    <div class="card">
+      <div class="field"><label>Дата</label><input id="m_date" class="pill-input" type="date" value="${toDateStr(todayDate())}"></div>
+      <div class="photo-row">
+        <div class="photo-cell"><label class="field-label">Перед</label><div class="photo-box" id="pb_front"><input type="file" accept="image/*" id="photoFrontInput" onchange="previewPhoto(this,'pb_front')"><img class="preview" id="prev_front">${camIcon}</div></div>
+        <div class="photo-cell"><label class="field-label">Бік</label><div class="photo-box" id="pb_side"><input type="file" accept="image/*" id="photoSideInput" onchange="previewPhoto(this,'pb_side')"><img class="preview" id="prev_side">${camIcon}</div></div>
+        <div class="photo-cell"><label class="field-label">Тил</label><div class="photo-box" id="pb_back"><input type="file" accept="image/*" id="photoBackInput" onchange="previewPhoto(this,'pb_back')"><img class="preview" id="prev_back">${camIcon}</div></div>
+      </div>
+      <div class="meas-grid">
+        <div class="field"><label>Вага (кг)</label><input id="m_weight" class="pill-input" type="number" step="0.1"></div>
+        <div class="field"><label>Талія (см)</label><input id="m_waist" class="pill-input" type="number" step="0.1"></div>
+        <div class="field"><label>Стегна (см)</label><input id="m_hips" class="pill-input" type="number" step="0.1"></div>
+        <div class="field"><label>Груди (см)</label><input id="m_chest" class="pill-input" type="number" step="0.1"></div>
+        <div class="field"><label>Стегно (см)</label><input id="m_thigh" class="pill-input" type="number" step="0.1"></div>
+        <div class="field"><label>Рука (см)</label><input id="m_arm" class="pill-input" type="number" step="0.1"></div>
+      </div>
+      ${custom.map((c,i)=>`<div class="meas-grid"><div class="field"><input class="pill-input" type="text" placeholder="Назва" value="${c.name}" oninput="state.tmpCustomFields[${i}].name=this.value"></div><div class="field"><input class="pill-input" type="number" step="0.1" placeholder="Значення" value="${c.value}" oninput="state.tmpCustomFields[${i}].value=this.value"></div></div>`).join("")}
+      <button class="btn-w" style="width:100%;margin-bottom:10px" onclick="addCustomField()">+ Своє поле</button>
+      <button class="btn-p block" onclick="saveProgressEntry()">Зберегти</button>
+    </div>
+    <button class="section-nav-btn" onclick="state.view='progressHistory';render()">Історія замірів <span style="font-size:20px;color:var(--ink-soft)">›</span></button>`;
+}
+function previewPhoto(input,boxId){const box=document.getElementById(boxId);const file=input.files[0];if(!file)return;const reader=new FileReader();reader.onload=e=>{const img=box.querySelector('img.preview');img.src=e.target.result;img.style.display='block';box.classList.add('has-photo');box.querySelector('.cam-icon').style.display='none';};reader.readAsDataURL(file);}
+function addCustomField(){state.tmpCustomFields=state.tmpCustomFields||[];state.tmpCustomFields.push({name:"",value:""});render();}
+async function saveProgressEntry(){
+  const num=id=>{const v=document.getElementById(id)?.value;return v===""||v===undefined?null:parseFloat(v);};
+  const customObj={};(state.tmpCustomFields||[]).forEach(c=>{if(c.name)customObj[c.name]=c.value;});
+  const fields={weight:num("m_weight"),waist:num("m_waist"),hips:num("m_hips"),chest:num("m_chest"),thigh:num("m_thigh"),arm:num("m_arm")};
+  const hasAny=Object.values(fields).some(v=>v!==null)||Object.keys(customObj).length>0;
+  const ff=document.getElementById("photoFrontInput")?.files[0];const sf=document.getElementById("photoSideInput")?.files[0];const bf=document.getElementById("photoBackInput")?.files[0];
+  if(!hasAny&&!ff&&!sf&&!bf){toast("Заповни хоча б одне поле або додай фото");return;}
+  async function up(file){if(!file)return null;const path=`${Date.now()}-${file.name}`;const{error:ue}=await sb.storage.from("progress-photos").upload(path,file);if(ue){toast("Помилка фото: "+ue.message);throw ue;}return sb.storage.from("progress-photos").getPublicUrl(path).data.publicUrl;}
+  let photo_front_url,photo_side_url,photo_back_url;try{photo_front_url=await up(ff);photo_side_url=await up(sf);photo_back_url=await up(bf);}catch(e){return;}
+  const payload={entry_date:document.getElementById("m_date")?.value||toDateStr(todayDate()),...fields,custom_fields:customObj,photo_front_url,photo_side_url,photo_back_url};
+  const{error}=await sb.from("progress_entries").insert(payload);if(error){toast("Помилка: "+error.message);return;}
+  state.tmpCustomFields=[];await loadAll();state.view="progressHistory";state.progressHistoryTab="history";render();toast("Збережено");
+}
+async function deleteProgressEntry(id){if(!confirm("Видалити запис?"))return;await sb.from("progress_entries").delete().eq("id",id);await loadAll();render();toast("Видалено");}
+
+function renderProgressHistory(){
+  const tab=state.progressHistoryTab||"history";
+  return `<div class="topbar"><button class="back-btn" onclick="goView('progress')">${chevronLeft} Прогрес</button><button class="close-btn" onclick="goView('progress')">${xIcon}</button></div>
+    <div class="seg-ctrl"><button class="${tab==="history"?"active":""}" onclick="state.progressHistoryTab='history';render()">Історія</button><button class="${tab==="compare"?"active":""}" onclick="state.progressHistoryTab='compare';render()">Порівняти</button></div>
+    ${tab==="history"?renderHistCards():renderCompare()}`;
+}
+function renderHistCards(){
+  const entries=state.progressEntries;if(!entries.length)return`<div class="empty-state">Поки немає записів</div>`;
+  return entries.map(e=>{const vals=valsForEntry(e);const photos=[{url:e.photo_front_url,label:"Перед"},{url:e.photo_side_url,label:"Бік"},{url:e.photo_back_url,label:"Тил"}];const hasP=photos.some(p=>p.url);
+    return`<div class="pc-card">
+      ${hasP?`<div class="pc-photos">${photos.map(p=>p.url?`<div class="pc-photo-cell"><span class="pc-ph-label">${p.label}</span><div class="pc-photo-box"><img src="${p.url}" loading="lazy"></div></div>`:`<div class="pc-photo-cell"><span class="pc-ph-label">${p.label}</span><div class="pc-photo-box"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--ink-soft)" stroke-width="1.5" stroke-linecap="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg></div></div>`).join("")}</div>`:""}
       <div class="pc-body">
-        <div class="pc-header">
-          <span class="pc-date">${fmtDateLong(e.entry_date)}</span>
-          <button class="pc-delete" onclick="deleteProgressEntry('${e.id}')">Видалити</button>
-        </div>
-        ${vals.length?`<div class="pc-meas-grid">${vals.map(([k,v])=>`<div class="pc-meas-row"><span class="pc-meas-key">${k}</span><span class="pc-meas-val">${v}</span></div>`).join("")}</div>`:`<div style="font-size:13px;color:var(--ink-faint)">Без замірів</div>`}
+        <div class="pc-header"><span class="pc-date">${fmtDateLong(e.entry_date)}</span><button class="pc-delete" onclick="deleteProgressEntry('${e.id}')">${trashIcon}</button></div>
+        ${vals.length?`<div class="pc-meas-grid">${vals.map(([k,v])=>`<div class="pc-meas-row"><span class="pc-meas-key">${k}</span><span class="pc-meas-val">${v}</span></div>`).join("")}</div>`:`<span style="font-size:12px;color:var(--ink-faint)">Без замірів</span>`}
       </div>
     </div>`;
   }).join("");
 }
 function renderCompare(){
-  const angle=state.compareAngle||"front";
-  const field="photo_"+angle+"_url";
-  const withPhotos=state.progressEntries.filter(e=>e[field]);
-  return `
-    <div class="compare-angle-row">
-      <button class="${angle==="front"?"active":""}" onclick="state.compareAngle='front';state.compareA=null;state.compareB=null;render()">Фронт</button>
-      <button class="${angle==="side"?"active":""}" onclick="state.compareAngle='side';state.compareA=null;state.compareB=null;render()">Бік</button>
-      <button class="${angle==="back"?"active":""}" onclick="state.compareAngle='back';state.compareA=null;state.compareB=null;render()">Бек</button>
+  const angle=state.compareAngle||"front";const field="photo_"+angle+"_url";const withPhotos=state.progressEntries.filter(e=>e[field]);
+  const angleLabels={front:"Перед",side:"Бік",back:"Тил"};
+  return `<div class="compare-angles">
+    ${["front","side","back"].map(a=>`<button class="${angle===a?"btn-p":"btn-w"}" style="flex:1;padding:11px 8px" onclick="state.compareAngle='${a}';state.compareA=null;state.compareB=null;render()">${angleLabels[a]}</button>`).join("")}
+  </div>
+  ${withPhotos.length<2?`<div class="empty-state">Потрібно щонайменше 2 фото ракурсу «${angleLabels[angle]}»</div>`:
+  `<div class="card">
+    <div class="compare-selects">
+      <input class="pill-input" type="date" style="flex:1" value="${state.compareA?state.progressEntries.find(e=>e.id===state.compareA)?.entry_date:""}" onchange="state.compareA=state.progressEntries.find(e=>e.entry_date===this.value&&e['${field}'])?.id||null;render()">
+      <span style="color:var(--ink-soft)">→</span>
+      <input class="pill-input" type="date" style="flex:1" value="${state.compareB?state.progressEntries.find(e=>e.id===state.compareB)?.entry_date:""}" onchange="state.compareB=state.progressEntries.find(e=>e.entry_date===this.value&&e['${field}'])?.id||null;render()">
     </div>
-    ${withPhotos.length<2
-      ?`<div class="empty-state">Потрібно щонайменше 2 фото цього ракурсу</div>`
-      :`<div class="compare-selects">
-          <select onchange="state.compareA=this.value||null;render()"><option value="">Обери дату</option>${withPhotos.map(e=>`<option value="${e.id}" ${state.compareA===e.id?"selected":""}>${fmtShortDate(e.entry_date)}</option>`).join("")}</select>
-          <span style="color:var(--ink-soft)">→</span>
-          <select onchange="state.compareB=this.value||null;render()"><option value="">Обери дату</option>${withPhotos.map(e=>`<option value="${e.id}" ${state.compareB===e.id?"selected":""}>${fmtShortDate(e.entry_date)}</option>`).join("")}</select>
-        </div>
-        ${state.compareA&&state.compareB
-          ?renderCompareGrid(withPhotos,field)
-          :`<div class="empty-state" style="padding:20px">Обери обидві дати для порівняння</div>`}
-      `}
-  `;
+    ${state.compareA&&state.compareB?renderCompareGrid(withPhotos,field):`<div class="empty-state" style="padding:16px">Обери обидві дати</div>`}
+  </div>`}`;
 }
 function renderCompareGrid(withPhotos,field){
-  const a=withPhotos.find(e=>e.id===state.compareA);
-  const b=withPhotos.find(e=>e.id===state.compareB);
-  if(!a||!b) return "";
-  const aVals=valsForEntry(a); const bVals=valsForEntry(b);
-  return `<div class="compare-grid">
-    <div class="compare-col">
-      <img src="${a[field]}">
-      <div style="font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:6px">${fmtShortDate(a.entry_date)}</div>
-      ${aVals.map(([k,v])=>`<div class="compare-meas">${k} <b>${v}</b></div>`).join("")}
-    </div>
-    <div class="compare-col">
-      <img src="${b[field]}">
-      <div style="font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:6px">${fmtShortDate(b.entry_date)}</div>
-      ${bVals.map(([k,v])=>`<div class="compare-meas">${k} <b>${v}</b></div>`).join("")}
-    </div>
+  const a=withPhotos.find(e=>e.id===state.compareA);const b=withPhotos.find(e=>e.id===state.compareB);if(!a||!b)return"";
+  const aVals=valsForEntry(a);const bVals=valsForEntry(b);
+  return`<div class="compare-grid">
+    <div class="compare-col"><img src="${a[field]}"><div style="font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:4px">${fmtShortDate(a.entry_date)}</div>${aVals.map(([k,v])=>`<div class="compare-meas"><span>${k}</span><b>${v}</b></div>`).join("")}</div>
+    <div class="compare-col"><img src="${b[field]}"><div style="font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:4px">${fmtShortDate(b.entry_date)}</div>${bVals.map(([k,v])=>`<div class="compare-meas"><span>${k}</span><b>${v}</b></div>`).join("")}</div>
   </div>`;
 }
-function addCustomField(){ state.tmpCustomFields=state.tmpCustomFields||[]; state.tmpCustomFields.push({name:"",value:""}); render(); }
-async function saveProgressEntry(){
-  const num=id=>{const v=document.getElementById(id).value;return v===""?null:parseFloat(v);};
-  const customObj={};
-  (state.tmpCustomFields||[]).forEach(c=>{if(c.name) customObj[c.name]=c.value;});
-  const fields={weight:num("m_weight"),waist:num("m_waist"),hips:num("m_hips"),chest:num("m_chest"),thigh:num("m_thigh"),arm:num("m_arm")};
-  const hasAny=Object.values(fields).some(v=>v!==null)||Object.keys(customObj).length>0;
-  const frontFile=document.getElementById("photoFrontInput").files[0];
-  const sideFile=document.getElementById("photoSideInput").files[0];
-  const backFile=document.getElementById("photoBackInput").files[0];
-  if(!hasAny&&!frontFile&&!sideFile&&!backFile){toast("Заповни хоча б одне поле або додай фото");return;}
-  async function uploadOne(file){ if(!file) return null; const path=`${Date.now()}-${file.name}`; const {error:ue}=await sb.storage.from("progress-photos").upload(path,file); if(ue){toast("Не вдалося завантажити фото: "+ue.message);throw ue;} const {data:ud}=sb.storage.from("progress-photos").getPublicUrl(path); return ud.publicUrl; }
-  let photo_front_url,photo_side_url,photo_back_url;
-  try{ photo_front_url=await uploadOne(frontFile); photo_side_url=await uploadOne(sideFile); photo_back_url=await uploadOne(backFile); }catch(e){return;}
-  const payload={entry_date:document.getElementById("m_date").value||toDateStr(todayDate()),...fields,custom_fields:customObj,photo_front_url,photo_side_url,photo_back_url};
-  const {error}=await sb.from("progress_entries").insert(payload);
-  if(error){toast("Помилка: "+error.message);return;}
-  state.tmpCustomFields=[]; await loadAll(); render(); toast("Збережено");
-}
-async function deleteProgressEntry(id){
-  if(!confirm("Видалити цей запис назавжди?")) return;
-  const {error}=await sb.from("progress_entries").delete().eq("id",id);
-  if(error){toast("Помилка: "+error.message);return;}
-  await loadAll(); render(); toast("Видалено");
-}
 
-/* ═══ EXECUTION ═══ */
-function buildSequence(workout){
-  const seq=[];
-  if(workout.warmup_enabled&&workout.warmup_seconds>0) seq.push({kind:"warmup",seconds:workout.warmup_seconds,note:workout.warmup_note});
-  for(let r=0;r<workout.rounds;r++){
-    workout.items.forEach(it=>{
-      const occ=it.repeat_count||1;
-      for(let o=0;o<occ;o++){
-        seq.push({kind:"exercise",item:it,round:r+1,occurrence:o+1,occurrencesTotal:occ});
-        if(it.rest_after_seconds>0) seq.push({kind:"rest",seconds:it.rest_after_seconds,round:r+1});
-      }
-    });
-    if(r<workout.rounds-1&&workout.rest_between_rounds_seconds>0) seq.push({kind:"rest_round",seconds:workout.rest_between_rounds_seconds,round:r+1});
-  }
-  if(workout.cooldown_enabled&&workout.cooldown_seconds>0) seq.push({kind:"cooldown",seconds:workout.cooldown_seconds,note:workout.cooldown_note});
-  return seq;
-}
-function startExecution(workout,scheduleItemId){
-  const seq=buildSequence(workout);
-  state.exec={workout,scheduleItemId,seq,idx:0,remaining:0,paused:false,timer:null};
-  document.getElementById("execScreen").classList.add("shown");
-  runExecStep();
-}
-function clearExecTimer(){ if(state.exec.timer){clearInterval(state.exec.timer);state.exec.timer=null;} }
-function runExecStep(){
-  const ex=state.exec; clearExecTimer();
-  if(ex.idx>=ex.seq.length){finishExecution();return;}
-  const step=ex.seq[ex.idx];
-  document.getElementById("execScreen").classList.toggle("rest",step.kind!=="exercise");
-  if(step.kind!=="exercise"||step.item.type==="time"){
-    ex.remaining=step.kind!=="exercise"?step.seconds:step.item.duration_seconds;
-    renderExecScreen(step);
-    ex.timer=setInterval(()=>{if(ex.paused)return;ex.remaining--;updateExecCountdown();if(ex.remaining<=0){ex.idx++;runExecStep();}},1000);
-  } else renderExecScreen(step);
-}
-function renderExecScreen(step){
-  const ex=state.exec;
-  const pct=Math.round((ex.idx/ex.seq.length)*100);
-  const nextLabel=step.kind==="exercise"&&step.item.type==="reps"?"Готово":"Наступна вправа";
-  let mid="";
-  if(step.kind!=="exercise"){
-    mid=`<div style="font-size:12px;opacity:.7;text-transform:uppercase;letter-spacing:.08em">${KICKER_LABELS[step.kind]||""}</div><div class="exec-big-num">${ex.remaining}</div><div class="exec-unit">секунд</div>${step.note?`<div class="exec-note">${step.note}</div>`:""}`;
-  } else {
-    const gif=state.exercises.find(e=>e.id===step.item.exercise_id)?.gif_url;
-    const note=state.exercises.find(e=>e.id===step.item.exercise_id)?.note;
-    if(step.item.type==="time"){
-      mid=`<div style="font-size:12px;opacity:.7">Раунд ${step.round} з ${ex.workout.rounds}</div>${gif?`<img class="exec-gif" src="${gif}">`:""}  <div class="exec-name display">${step.item.name||""}</div>${note?`<div class="exec-note">${note}</div>`:""}<div class="exec-big-num">${ex.remaining}</div><div class="exec-unit">секунд</div>`;
-    } else {
-      mid=`<div style="font-size:12px;opacity:.7">Раунд ${step.round} з ${ex.workout.rounds}</div>${gif?`<img class="exec-gif" src="${gif}">`:""}<div class="exec-name display">${step.item.name||""}</div>${note?`<div class="exec-note">${note}</div>`:""}<div class="exec-big-num">${step.item.reps||0}</div><div class="exec-unit">повторень</div>`;
-    }
-  }
-  document.getElementById("execScreen").innerHTML=`
-    <div class="exec-progress-full"><i style="width:${pct}%"></i></div>
-    <div class="exec-scroll">${mid}</div>
-    <div class="exec-controls">
-      <div class="exec-step-count">${ex.idx+1} / ${ex.seq.length}</div>
-      <div class="exec-btn-row">
-        <button onclick="exitExecution()">Вийти</button>
-        <button class="exec-main" id="pauseBtn" onclick="togglePause()">${ex.paused?"Продовжити":"Пауза"}</button>
-        <button onclick="advanceExec()">${nextLabel}</button>
-      </div>
-    </div>
-  `;
-}
-function updateExecCountdown(){ const n=document.querySelector("#execScreen .exec-big-num"); if(n) n.textContent=state.exec.remaining; }
-function togglePause(){ state.exec.paused=!state.exec.paused; document.getElementById("pauseBtn").textContent=state.exec.paused?"Продовжити":"Пауза"; }
-function advanceExec(){ state.exec.idx++; runExecStep(); }
-function exitExecution(){ if(!confirm("Вийти з тренування? Прогрес не зарахується.")) return; clearExecTimer(); document.getElementById("execScreen").classList.remove("shown"); state.exec=null; }
-async function finishExecution(){
-  clearExecTimer();
-  const t=toDateStr(todayDate());
-  const scheduleItemId=state.exec.scheduleItemId;
-  const exists=state.completions.some(c=>c.completion_date===t&&c.schedule_item_id===scheduleItemId);
-  if(!exists){ const {data}=await sb.from("daily_completions").insert({completion_date:t,schedule_item_id:scheduleItemId}).select().single(); if(data) state.completions.push(data); }
-  document.getElementById("execScreen").innerHTML=`
-    <div class="exec-scroll" style="justify-content:center">
-      <div class="exec-name display">Тренування завершено 🎉</div>
-    </div>
-    <div class="exec-controls"><div class="exec-btn-row"><button class="exec-main" style="flex:1" onclick="closeExecution()">До плану дня</button></div></div>`;
-}
-function closeExecution(){ document.getElementById("execScreen").classList.remove("shown"); state.exec=null; state.view="home"; render(); }
+/* ── EXECUTION ── */
+function buildSequence(w){const seq=[];if(w.warmup_enabled&&w.warmup_seconds>0)seq.push({kind:"warmup",seconds:w.warmup_seconds,note:w.warmup_note});for(let r=0;r<w.rounds;r++){w.items.forEach(it=>{const occ=it.repeat_count||1;for(let o=0;o<occ;o++){seq.push({kind:"exercise",item:it,round:r+1,occurrence:o+1,occurrencesTotal:occ});if(it.rest_after_seconds>0)seq.push({kind:"rest",seconds:it.rest_after_seconds,round:r+1});}});if(r<w.rounds-1&&w.rest_between_rounds_seconds>0)seq.push({kind:"rest_round",seconds:w.rest_between_rounds_seconds,round:r+1});}if(w.cooldown_enabled&&w.cooldown_seconds>0)seq.push({kind:"cooldown",seconds:w.cooldown_seconds,note:w.cooldown_note});return seq;}
+function startExecution(wo,sid){state.exec={workout:wo,scheduleItemId:sid,seq:buildSequence(wo),idx:0,remaining:0,paused:false,timer:null};document.getElementById("execScreen").classList.add("shown");runExecStep();}
+function clearExecTimer(){if(state.exec.timer){clearInterval(state.exec.timer);state.exec.timer=null;}}
+function runExecStep(){const ex=state.exec;clearExecTimer();if(ex.idx>=ex.seq.length){finishExecution();return;}const step=ex.seq[ex.idx];document.getElementById("execScreen").classList.toggle("rest",step.kind!=="exercise");if(step.kind!=="exercise"||step.item.type==="time"){ex.remaining=step.kind!=="exercise"?step.seconds:step.item.duration_seconds;renderExecScreen(step);ex.timer=setInterval(()=>{if(ex.paused)return;ex.remaining--;updateExecCD();if(ex.remaining<=0){ex.idx++;runExecStep();}},1000);}else renderExecScreen(step);}
+function renderExecScreen(step){const ex=state.exec;const pct=Math.round((ex.idx/ex.seq.length)*100);const nextLabel=step.kind==="exercise"&&step.item.type==="reps"?"Готово":"Наступна";let mid="";if(step.kind!=="exercise"){mid=`<div style="font-size:12px;opacity:.7;text-transform:uppercase;letter-spacing:.08em">${KICKER_LABELS[step.kind]||""}</div><div class="exec-big">${ex.remaining}</div><div style="font-size:12.5px;opacity:.7">секунд</div>${step.note?`<div class="exec-note">${step.note}</div>`:""}`;}else{const gif=state.exercises.find(e=>e.id===step.item.exercise_id)?.gif_url;const note=state.exercises.find(e=>e.id===step.item.exercise_id)?.note;if(step.item.type==="time")mid=`<div style="font-size:12px;opacity:.7">Раунд ${step.round} з ${ex.workout.rounds}</div>${gif?`<img class="exec-gif" src="${gif}">`:""}<div class="exec-name">${step.item.name||""}</div>${note?`<div class="exec-note">${note}</div>`:""}<div class="exec-big">${ex.remaining}</div><div style="font-size:12.5px;opacity:.7">секунд</div>`;else mid=`<div style="font-size:12px;opacity:.7">Раунд ${step.round} з ${ex.workout.rounds}</div>${gif?`<img class="exec-gif" src="${gif}">`:""}<div class="exec-name">${step.item.name||""}</div>${note?`<div class="exec-note">${note}</div>`:""}<div class="exec-big">${step.item.reps||0}</div><div style="font-size:12.5px;opacity:.7">повторень</div>`;}
+  document.getElementById("execScreen").innerHTML=`<div class="exec-prog"><i style="width:${pct}%"></i></div><div class="exec-scroll">${mid}</div><div class="exec-controls"><div class="exec-count">${ex.idx+1}/${ex.seq.length}</div><div class="exec-btns"><button onclick="exitExecution()">Вийти</button><button class="main" id="pauseBtn" onclick="togglePause()">${ex.paused?"Продовжити":"Пауза"}</button><button onclick="advanceExec()">${nextLabel}</button></div></div>`;}
+function updateExecCD(){const n=document.querySelector("#execScreen .exec-big");if(n)n.textContent=state.exec.remaining;}
+function togglePause(){state.exec.paused=!state.exec.paused;document.getElementById("pauseBtn").textContent=state.exec.paused?"Продовжити":"Пауза";}
+function advanceExec(){state.exec.idx++;runExecStep();}
+function exitExecution(){if(!confirm("Вийти? Прогрес не зарахується."))return;clearExecTimer();document.getElementById("execScreen").classList.remove("shown");state.exec=null;}
+async function finishExecution(){clearExecTimer();const t=toDateStr(todayDate());const sid=state.exec.scheduleItemId;if(!state.completions.some(c=>c.completion_date===t&&c.schedule_item_id===sid)){const{data}=await sb.from("daily_completions").insert({completion_date:t,schedule_item_id:sid}).select().single();if(data)state.completions.push(data);}document.getElementById("execScreen").innerHTML=`<div class="exec-scroll" style="justify-content:center"><div class="exec-name" style="font-size:26px">Тренування завершено 🎉</div></div><div class="exec-controls"><div class="exec-btns"><button class="main" style="flex:1" onclick="closeExecution()">До плану дня</button></div></div>`;}
+function closeExecution(){document.getElementById("execScreen").classList.remove("shown");state.exec=null;state.view="home";render();}
 </script>
 </body>
 </html>
