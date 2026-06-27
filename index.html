@@ -8,6 +8,19 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Afacad:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- ════ Microsoft Clarity ════
+     1. clarity.microsoft.com → New project → копіюй Project ID
+     2. Заміни YOUR_CLARITY_ID нижче своїм ID
+     3. Вивантаж index.html на GitHub Pages
+     ═══════════════════════════ -->
+<script type="text/javascript">
+  (function(c,l,a,r,i,t,y){
+    c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+    t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+    y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+  })(window, document, "clarity", "script", "YOUR_CLARITY_ID");
+</script>
 <style>
 :root{
   --bg:#f3f2f0;--surface:#fff;--ink:#1c1c1e;--ink-soft:#6b5f66;--ink-faint:#8a8a8e;
@@ -28,9 +41,20 @@ button{font-family:inherit;cursor:pointer;}input,select,textarea{font-family:inh
 #pg.hidden{display:none;}
 .pblob{width:343px;height:242px;background:radial-gradient(ellipse at center,rgba(198,162,255,.28) 0%,rgba(212,244,231,.22) 45%,transparent 70%);border-radius:50%;flex-shrink:0;}
 .pan{font-family:var(--fa);font-size:68px;color:#6d6d6d;text-align:center;line-height:1;margin:-90px 0 0;position:relative;}
-.pf{display:flex;flex-direction:column;gap:24px;width:100%;max-width:343px;margin-top:48px;}
+.pf{display:flex;flex-direction:column;gap:16px;width:100%;max-width:343px;margin-top:40px;}
 .ph{font-family:var(--fa);font-size:16px;color:#6d6d6d;text-align:center;}
 .pe{color:var(--accent);font-size:13px;text-align:center;min-height:16px;}
+.auth-tabs{display:flex;gap:0;background:var(--bg);border-radius:var(--rp);overflow:hidden;border:1px solid var(--border-sub);}
+.auth-tab{flex:1;padding:10px 16px;border:none;background:transparent;font-size:14px;font-weight:700;color:var(--ink-faint);cursor:pointer;}
+.auth-tab.active{background:var(--surface);color:var(--ink);}
+.auth-divider{height:1px;background:var(--border-sub);margin:4px 0;}
+.auth-link{text-align:center;font-size:13px;color:var(--ink-soft);cursor:pointer;text-decoration:underline;}
+.auth-success{color:#57624a;font-size:13px;text-align:center;min-height:16px;}
+.user-chip{background:var(--surface);border:none;border-radius:var(--rp);padding:6px 12px;display:flex;align-items:center;gap:8px;cursor:pointer;box-shadow:var(--shi);}
+.user-av{width:28px;height:28px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;}
+.logout-modal{text-align:center;padding:24px 20px calc(24px + env(safe-area-inset-bottom));}
+.logout-modal h3{font-family:var(--fd);font-size:18px;margin:0 0 4px;}
+.logout-modal p{color:var(--ink-soft);font-size:13px;margin:0 0 20px;}
 .bp{background:var(--accent);color:#fff;border:none;border-radius:var(--rb);padding:11px 28px;font-weight:700;font-size:13.5px;box-shadow:var(--shb);display:flex;align-items:center;justify-content:center;gap:4px;transition:transform .12s;}
 .bp:active{transform:scale(.97);}
 .bp.bl{width:100%;}
@@ -92,11 +116,14 @@ nav.bnav{position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:cen
 .dh{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;margin-top:14px;}
 .dt{font-family:var(--fa);font-weight:700;font-size:22px;color:var(--ink);margin:0;}
 /* schedule */
-.sdb{display:flex;gap:8px;align-items:flex-end;margin-bottom:14px;}
-.sdl{flex:1;display:flex;flex-direction:column;gap:8px;}
-.sdr{display:flex;flex-direction:column;gap:8px;align-items:center;}
-.sib{width:40px;height:40px;border-radius:var(--rp);border:1px solid var(--border-sub);background:var(--surface);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
-.sib.g{background:transparent;border-color:transparent;}
+.sched-row{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border-row);}
+.sched-row:last-child{border-bottom:none;}
+.sched-dl{font-size:11px;font-weight:700;color:var(--ink-soft);letter-spacing:.04em;text-transform:uppercase;min-width:28px;padding-top:10px;flex-shrink:0;}
+.sched-items{display:flex;flex-wrap:wrap;gap:6px;flex:1;align-items:center;}
+.chip{display:flex;align-items:center;gap:4px;background:var(--surface);border:1px solid var(--border-sub);border-radius:var(--rp);padding:6px 10px 6px 12px;font-size:13.5px;color:var(--ink);}
+.chip button{background:none;border:none;color:var(--ink-faint);font-size:14px;padding:0 2px;cursor:pointer;line-height:1;}
+.chip button:hover{color:var(--ink);}
+.chip-add{width:32px;height:32px;border-radius:var(--rp);border:1px solid var(--border-sub);background:var(--surface);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;color:var(--ink-soft);flex-shrink:0;}
 /* exercise picker grouped */
 .ex-picker{border:1px solid var(--border-sub);border-radius:var(--rc);overflow:hidden;margin-bottom:12px;max-height:280px;overflow-y:auto;}
 .ex-grp-label{padding:8px 14px 4px;font-size:10px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em;background:var(--bg);position:sticky;top:0;}
@@ -193,10 +220,24 @@ nav.bnav{position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:cen
   <div class="pblob"></div>
   <div class="pan">Kinetix</div>
   <div class="pf">
-    <div class="ph">Введіть пароль</div>
-    <input id="pinInput" class="pi" type="password" inputmode="numeric" maxlength="8" placeholder="• • • •" style="font-family:var(--fa);font-size:20px;font-weight:700;text-align:center;letter-spacing:4.8px">
-    <div class="pe" id="pinError"></div>
-    <button class="bp bl" onclick="tryPin()" style="font-family:var(--fa);font-weight:700;font-size:16px">Увійти</button>
+    <div class="auth-tabs">
+      <button id="tab_login" class="auth-tab active" onclick="switchTab('login')">Увійти</button>
+      <button id="tab_reg" class="auth-tab" onclick="switchTab('register')">Зареєструватись</button>
+    </div>
+    <div id="auth_name_wrap" style="display:none">
+      <input id="auth_name" class="pi" type="text" placeholder="Ім'я">
+    </div>
+    <input id="auth_email" class="pi" type="email" placeholder="Email" autocomplete="email">
+    <input id="auth_pass" class="pi" type="password" placeholder="Пароль" autocomplete="current-password">
+    <div id="auth_pass2_wrap" style="display:none">
+      <input id="auth_pass2" class="pi" type="password" placeholder="Повторіть пароль">
+    </div>
+    <div class="pe" id="authError"></div>
+    <div id="authSuccess" class="auth-success"></div>
+    <button id="authBtn" class="bp bl" onclick="doAuth()" style="font-family:var(--fa);font-weight:700;font-size:16px">Увійти</button>
+    <div id="forgotWrap" style="text-align:center">
+      <span class="auth-link" onclick="switchTab('forgot')">Забула пароль?</span>
+    </div>
   </div>
 </div>
 <div id="app"><main id="view"></main><nav class="bnav" id="bnav"></nav></div>
@@ -235,22 +276,134 @@ function wd(d){return (d.getDay()+6)%7;}
 function fdl(s){if(!s)return"";const d=new Date(s+"T00:00:00");return d.toLocaleDateString("uk-UA",{day:"numeric",month:"long",year:"numeric"});}
 function fsd(s){if(!s)return"";const d=new Date(s+"T00:00:00");return d.toLocaleDateString("uk-UA",{day:"2-digit",month:"2-digit",year:"numeric"});}
 function fdur(s){return s<60?`${s} с`:`${Math.round(s/60)} хв`;}
-function calcWS(w){let hr=false,tot=0;(w.items||[]).forEach(it=>{const occ=it.repeat_count||1;const base=it.type==="time"?(it.duration_seconds||0):((it.reps||0)*3);if(it.type==="reps")hr=true;tot+=occ*(base+(it.rest_after_seconds||0));});tot*=(w.rounds||1);if((w.rounds||1)>1)tot+=(w.rounds-1)*(w.rest_between_rounds_seconds||0);return{seconds:tot,approx:hr};}
+function calcWS(w){let hr=false,tot=0;(w.items||[]).forEach(it=>{const occ=it.repeat_count||1;const base=it.type==="time"?(it.duration_seconds||0):((it.reps||0)*3);if(it.type==="reps")hr=true;tot+=occ*(base+(it.rest_after_seconds||0));});tot*=(w.rounds||1);return{seconds:tot,approx:hr};}
 function ring(pct){const r=27,c=2*Math.PI*r,off=c*(1-Math.min(pct,1));return `<svg width="64" height="64" viewBox="0 0 64 64"><circle cx="32" cy="32" r="${r}" fill="none" stroke="var(--border)" stroke-width="7"/><circle cx="32" cy="32" r="${r}" fill="none" stroke="var(--accent)" stroke-width="7" stroke-dasharray="${c}" stroke-dashoffset="${off}" stroke-linecap="round" transform="rotate(-90 32 32)" style="transition:stroke-dashoffset .3s"/></svg>`;}
 function toast(msg){const t=document.getElementById("toast");t.textContent=msg;t.classList.add("shown");clearTimeout(window.__tt);window.__tt=setTimeout(()=>t.classList.remove("shown"),2600);}
 function om(html){document.getElementById("mbd").innerHTML=html;document.getElementById("mb").classList.add("shown");}
 function cm(){document.getElementById("mb").classList.remove("shown");}
 document.getElementById("mb").addEventListener("click",e=>{if(e.target.id==="mb")cm();});
 
-async function tryPin(){
-  const v=document.getElementById("pinInput").value.trim();const e2=document.getElementById("pinError");
-  if(!v){e2.textContent="Введи пароль";return;}
-  const{data,error}=await sb.from("app_settings").select("pin_code").eq("id",1).single();
-  if(error){e2.textContent="Помилка з'єднання";return;}
-  if(data.pin_code===v){document.getElementById("pg").classList.add("hidden");document.getElementById("app").classList.add("shown");boot();}
-  else e2.textContent="Невірний пароль";
+let currentUser=null;
+let authMode='login';
+
+function switchTab(mode){
+  authMode=mode;
+  const isLogin=mode==="login";const isReg=mode==="register";const isForgot=mode==="forgot";const isReset=mode==="reset";
+  document.getElementById("tab_login").classList.toggle("active",isLogin||isForgot||isReset);
+  document.getElementById("tab_reg").classList.toggle("active",isReg);
+  document.getElementById("auth_name_wrap").style.display=isReg?"block":"none";
+  document.getElementById("auth_pass2_wrap").style.display=(isReg||isReset)?"block":"none";
+  document.getElementById("forgotWrap").style.display=(isLogin)?"block":"none";
+  document.getElementById("auth_pass").style.display=isForgot?"none":"block";
+  document.getElementById("authError").textContent="";
+  document.getElementById("authSuccess").textContent="";
+  if(isForgot){
+    document.getElementById("authBtn").textContent="Надіслати лист";
+    document.querySelector(".auth-tabs").style.display="none";
+  } else if(isReset){
+    document.getElementById("authBtn").textContent="Зберегти новий пароль";
+    document.querySelector(".auth-tabs").style.display="none";
+    document.getElementById("auth_email").style.display="none";
+  } else {
+    document.querySelector(".auth-tabs").style.display="flex";
+    document.getElementById("auth_email").style.display="block";
+    document.getElementById("authBtn").textContent=isLogin?"Увійти":"Зареєструватись";
+    if(isLogin) document.getElementById("auth_pass").setAttribute("autocomplete","current-password");
+    else document.getElementById("auth_pass").setAttribute("autocomplete","new-password");
+  }
 }
-document.getElementById("pinInput").addEventListener("keydown",e=>{if(e.key==="Enter")tryPin();});
+
+async function doAuth(){
+  const email=document.getElementById("auth_email").value.trim();
+  const pass=document.getElementById("auth_pass").value;
+  const errEl=document.getElementById("authError");
+  const okEl=document.getElementById("authSuccess");
+  errEl.textContent="";okEl.textContent="";
+  document.getElementById("authBtn").disabled=true;
+  const origText=document.getElementById("authBtn").textContent;
+  document.getElementById("authBtn").textContent="...";
+  if(authMode==="forgot"){
+    if(!email){errEl.textContent="Введи email";document.getElementById("authBtn").textContent=origText;document.getElementById("authBtn").disabled=false;return;}
+    const{error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:window.location.href});
+    if(error){errEl.textContent=error.message;}
+    else{okEl.textContent="✓ Лист надіслано — перевір пошту";document.getElementById("authBtn").textContent="Надіслати ще раз";}
+    document.getElementById("authBtn").disabled=false;return;
+  }
+  if(authMode==="reset"){
+    const newPass=document.getElementById("auth_pass").value;
+    const newPass2=document.getElementById("auth_pass2").value;
+    if(!newPass||newPass.length<6){errEl.textContent="Мінімум 6 символів";document.getElementById("authBtn").textContent=origText;document.getElementById("authBtn").disabled=false;return;}
+    if(newPass!==newPass2){errEl.textContent="Паролі не збігаються";document.getElementById("authBtn").textContent=origText;document.getElementById("authBtn").disabled=false;return;}
+    const{error}=await sb.auth.updateUser({password:newPass});
+    if(error){errEl.textContent=error.message;}
+    else{okEl.textContent="✓ Пароль змінено! Входь.";setTimeout(()=>switchTab("login"),1800);}
+    document.getElementById("authBtn").textContent=origText;document.getElementById("authBtn").disabled=false;return;
+  }
+  if(!email||!pass){errEl.textContent="Введи email і пароль";document.getElementById("authBtn").textContent=origText;document.getElementById("authBtn").disabled=false;return;}
+  if(authMode==="login"){
+    const{data,error}=await sb.auth.signInWithPassword({email,password:pass});
+    if(error){errEl.textContent=error.message==="Invalid login credentials"?"Невірний email або пароль":error.message;document.getElementById("authBtn").textContent=origText;document.getElementById("authBtn").disabled=false;return;}
+    currentUser=data.user;showApp();
+  } else {
+    const name=document.getElementById("auth_name").value.trim();
+    const pass2=document.getElementById("auth_pass2").value;
+    if(!name){errEl.textContent="Введи ім'я";document.getElementById("authBtn").textContent=origText;document.getElementById("authBtn").disabled=false;return;}
+    if(pass!==pass2){errEl.textContent="Паролі не збігаються";document.getElementById("authBtn").textContent=origText;document.getElementById("authBtn").disabled=false;return;}
+    if(pass.length<6){errEl.textContent="Пароль мінімум 6 символів";document.getElementById("authBtn").textContent=origText;document.getElementById("authBtn").disabled=false;return;}
+    const{data,error}=await sb.auth.signUp({email,password:pass,options:{data:{name}}});
+    if(error){errEl.textContent=error.message;document.getElementById("authBtn").textContent=origText;document.getElementById("authBtn").disabled=false;return;}
+    currentUser=data.user;
+    if(data.session) showApp();
+    else{okEl.textContent="✓ Підтвердь email — лист надіслано!";document.getElementById("authBtn").textContent=origText;document.getElementById("authBtn").disabled=false;}
+  }
+}
+[document.getElementById("auth_email"),document.getElementById("auth_pass")].forEach(el=>el?.addEventListener("keydown",e=>{if(e.key==="Enter")doAuth();}));
+
+function showApp(){
+  document.getElementById("pg").classList.add("hidden");
+  document.getElementById("app").classList.add("shown");
+  boot();
+}
+
+async function logout(){
+  await sb.auth.signOut();
+  currentUser=null;
+  document.getElementById("app").classList.remove("shown");
+  document.getElementById("pg").classList.remove("hidden");
+  document.getElementById("authBtn").textContent="Увійти";
+  document.getElementById("authBtn").disabled=false;
+  document.getElementById("auth_email").value="";
+  document.getElementById("auth_pass").value="";
+  S={view:"home",exercises:[],careActions:[],workouts:[],scheduleItems:[],completions:[],progressEntries:[],ew:null,exec:null,showPicker:false,progressTab:"history",cmpAngle:"front",cmpA:null,cmpB:null,tmpCF:[],libTab:"exercises",exSearch:""};
+}
+
+function openUserModal(){
+  const name=currentUser?.user_metadata?.name||currentUser?.email?.split("@")[0]||"Користувач";
+  const email=currentUser?.email||"";
+  const initials=name.charAt(0).toUpperCase();
+  om(`<div class="logout-modal">
+    <div class="user-av" style="width:56px;height:56px;font-size:22px;margin:0 auto 12px">${initials}</div>
+    <h3>${name}</h3>
+    <p>${email}</p>
+    <button class="bp bl" onclick="cm();logout()">Вийти з акаунту</button>
+  </div>`);
+}
+
+// Detect password recovery link
+sb.auth.onAuthStateChange((event,session)=>{
+  if(event==="PASSWORD_RECOVERY"){
+    // User clicked reset link in email
+    document.getElementById("pg").classList.remove("hidden");
+    document.getElementById("app").classList.remove("shown");
+    switchTab("reset");
+  }
+});
+
+// Check auth on load
+(async()=>{
+  const{data:{session}}=await sb.auth.getSession();
+  if(session&&session.user){currentUser=session.user;showApp();}
+})();
 
 async function boot(){renderNav();await loadAll();render();}
 async function loadAll(){
@@ -296,8 +449,11 @@ function rHome(){
       </div>`;
     }).join("")}</div>`;
   }
+  const uname=currentUser?.user_metadata?.name||currentUser?.email?.split("@")[0]||"";
+  const uinit=uname.charAt(0).toUpperCase();
   return `<div class="sr"><div class="rw">${ring(Math.min(str/30,1))}<div class="rc2"><span style="font-family:var(--fm);font-weight:700;font-size:18px">${str}</span></div></div>
-    <div><div style="font-family:var(--fd);font-weight:700;font-size:17px">днів поспіль</div><div style="font-size:13px;color:var(--ink-soft)">будь-яка виконана дія</div></div></div>
+    <div style="flex:1"><div style="font-family:var(--fd);font-weight:700;font-size:17px">днів поспіль</div><div style="font-size:13px;color:var(--ink-soft)">будь-яка виконана дія</div></div>
+    <button class="user-chip" onclick="openUserModal()"><div class="user-av">${uinit}</div></button></div>
     <div class="pb"><i style="width:${pct}%"></i></div>
     <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:2px">${done} з ${items.length} виконано сьогодні</div>
     <div class="dh"><h3 class="dt">${dl}</h3><button class="ti" onclick="S.view='schedule';render()">${EG}</button></div>
@@ -319,14 +475,20 @@ function schedOptgroups(){
   return html;
 }
 function rSchedule(){
-  const days=DN.map((dn,dow)=>{
+  const DS=["Пн","Вт","Ср","Чт","Пт","Сб","Нд"];
+  const rows=DN.map((dn,dow)=>{
     const items=S.scheduleItems.filter(s=>s.day_of_week===dow).sort((a,b)=>a.order_index-b.order_index);
-    let lRows="",rBtns="";
-    if(items.length===0){lRows=`<div class="pi" style="color:var(--ink-faint)">Нічого не обрано</div>`;rBtns=`<button class="sib" onclick="openAddSched(${dow})">${EPLUS}</button>`;}
-    else{items.forEach(it=>{const ref=it.item_type==="workout"?S.workouts.find(w=>w.id===it.workout_id):S.careActions.find(c=>c.id===it.care_action_id);lRows+=`<div class="pi">${ref?ref.name:"(видалено)"}</div>`;rBtns+=`<button class="sib g" onclick="remSched('${it.id}')">${EX}</button>`;});rBtns+=`<button class="sib" onclick="openAddSched(${dow})">${EPLUS}</button>`;}
-    return `<div class="sdb"><div class="sdl"><div class="fl">${dn.toUpperCase()}</div>${lRows}</div><div class="sdr">${rBtns}</div></div>`;
+    const chips=items.map(it=>{
+      const ref=it.item_type==="workout"?S.workouts.find(w=>w.id===it.workout_id):S.careActions.find(c=>c.id===it.care_action_id);
+      return `<span class="chip">${ref?ref.name:"?"}<button onclick="remSched('${it.id}')">×</button></span>`;
+    }).join("");
+    return `<div class="sched-row">
+      <span class="sched-dl">${DS[dow]}</span>
+      <div class="sched-items">${chips}<button class="chip-add" onclick="openAddSched(${dow})" title="Додати на ${dn}">+</button></div>
+    </div>`;
   }).join("");
-  return `<div class="tb"><h2>Розклад тренувань</h2><button class="ti" onclick="S.view='home';render()">${EX}</button></div>${days}`;
+  return `<div class="tb"><h2>Розклад тренувань</h2><button class="ti" onclick="S.view='home';render()">${EX}</button></div>
+    <div class="card" style="padding:0 16px">${rows}</div>`;
 }
 function openAddSched(day){
   om(`<h2>Додати на ${DN[day].toLowerCase()}</h2>
@@ -392,8 +554,8 @@ function rWorkouts(){
     <button class="bp bl" onclick="openWE()">Нове тренування</button>`;
 }
 function openWE(id){
-  if(id){const w=S.workouts.find(w=>w.id===id);S.ew={id:w.id,name:w.name,rounds:w.rounds,workout_type:w.workout_type||"",items:w.items.map(it=>({...it})),rbs:w.rest_between_rounds_seconds||0};}
-  else S.ew={id:null,name:"",rounds:1,workout_type:"",items:[],rbs:0};
+  if(id){const w=S.workouts.find(w=>w.id===id);S.ew={id:w.id,name:w.name,rounds:w.rounds,workout_type:w.workout_type||"",items:w.items.map(it=>({...it}))};}
+  else S.ew={id:null,name:"",rounds:1,workout_type:"",items:[]};
   S.showPicker=false;S.view="workoutEditor";render();
 }
 function chRounds(d){S.ew.rounds=Math.max(1,(S.ew.rounds||1)+d);render();}
@@ -425,18 +587,17 @@ function rWE(){
     <div class="field"><label>Тип тренування</label><select id="w_t" class="pisel" onchange="S.ew.workout_type=this.value"><option value="">— Обери тип —</option>${WT.map(t=>`<option value="${t}" ${ew.workout_type===t?"selected":""}>${t}</option>`).join("")}</select></div>
     <div style="display:flex;gap:10px;margin-bottom:14px;align-items:flex-end">
       <div><div class="fl" style="margin-bottom:8px">КІЛЬКІСТЬ СЕТІВ</div><div class="st"><button onclick="chRounds(-1)">–</button><span class="sv">${ew.rounds}</span><button onclick="chRounds(1)">+</button></div></div>
-      <div class="field" style="flex:1;margin:0"><label>ВІДПОЧИНОК МІЖ СЕТАМИ (СЕК)</label><input id="w_rb" class="pi" type="number" min="0" value="${ew.rbs||0}" onchange="S.ew.rbs=parseInt(this.value)||0"></div>
+
     </div>
-    ${ew.items.length?`<div style="font-size:13px;color:var(--ink-soft);margin-bottom:8px">≈ ${fdur(c.seconds)}</div>`:""}
+    ${ew.items.length?`<div id="dur-display" style="font-size:13px;color:var(--ink-soft);margin-bottom:8px">≈ ${fdur(c.seconds)}</div>`:`<div id="dur-display"></div>`}
     <div class="stt">Вправи для одного сету</div>
     ${ew.items.length===0?`<div class="est" style="padding:16px 0">Додай вправи нижче</div>`:""}
     ${ew.items.map((it,i)=>`<div class="bi"><div class="bt"><span class="bn">${i+1}. ${it.name}</span><button class="ib" onclick="mvItem(${i},-1)">↑</button><button class="ib" onclick="mvItem(${i},1)">↓</button><button class="ib" onclick="rmItem(${i})">✕</button></div>
       <div class="bmr">
         ${it.type==="time"
-          ?`<div class="mf"><label>ЧАС (СЕК)</label><input id="bd_${i}" class="mi" type="number" min="1" value="${it.duration_seconds||30}" onchange="S.ew.items[${i}].duration_seconds=parseInt(this.value)||0"></div>`
-          :`<div class="mf"><label>ПОВТОРЕНЬ</label><input id="br_${i}" class="mi" type="number" min="1" value="${it.reps||12}" onchange="S.ew.items[${i}].reps=parseInt(this.value)||0"></div>`}
-        <div class="mf"><label>ПОВТОРИТИ (РАЗ)</label><input id="brp_${i}" class="mi" type="number" min="1" value="${it.repeat_count||1}" onchange="S.ew.items[${i}].repeat_count=parseInt(this.value)||1"></div>
-        <div class="mf"><label>ПАУЗА ПІСЛЯ (СЕК)</label><input id="brs_${i}" class="mi" type="number" min="0" value="${it.rest_after_seconds||0}" onchange="S.ew.items[${i}].rest_after_seconds=parseInt(this.value)||0"></div>
+          ?`<div class="mf"><label>ЧАС (СЕК)</label><input id="bd_${i}" class="mi" type="number" min="1" value="${it.duration_seconds||30}" oninput="onNumIn(${i},'duration_seconds',this.value)"></div>`
+          :`<div class="mf"><label>ПОВТОРЕНЬ</label><input id="br_${i}" class="mi" type="number" min="1" value="${it.reps||12}" oninput="onNumIn(${i},'reps',this.value)"></div>`}
+        <div class="mf"><label>ПАУЗА ПІСЛЯ (СЕК)</label><input id="brs_${i}" class="mi" type="number" min="0" value="${it.rest_after_seconds||0}" oninput="onNumIn(${i},'rest_after_seconds',this.value)"></div>
       </div></div>`).join("")}
     <div style="margin:10px 0">
       <button class="${S.showPicker?"bp":"bg"} bl" onclick="S.showPicker=!S.showPicker;render()">
@@ -458,10 +619,15 @@ function addEx(eid){
 function mvItem(i,d){const items=S.ew.items;const j=i+d;if(j<0||j>=items.length)return;[items[i],items[j]]=[items[j],items[i]];render();}
 function rmItem(i){S.ew.items.splice(i,1);render();}
 async function delWO(id){if(!confirm("Видалити тренування?"))return;await sb.from("workouts").delete().eq("id",id);await loadAll();S.view="workouts";render();toast("Видалено");}
+function onNumIn(idx,field,val){
+  if(!S.ew||!S.ew.items[idx])return;
+  S.ew.items[idx][field]=parseInt(val)||0;
+  const el=document.getElementById('dur-display');
+  if(el){const c=calcWS(S.ew);el.textContent=c.seconds>0?`≈ ${fdur(c.seconds)}`:"";}}
 async function saveWO(){
   const ew=S.ew;if(!ew.name.trim()){toast("Вкажи назву тренування");return;}if(ew.items.length===0){toast("Додай хоча б одну вправу");return;}
   // Build payload without workout_type to test if column exists
-  const payload={name:ew.name,rounds:ew.rounds,rest_between_rounds_seconds:ew.rbs||0};
+  const payload={name:ew.name,rounds:ew.rounds};
   if(ew.workout_type) payload.workout_type=ew.workout_type;
   let wid=ew.id;
   if(wid){
@@ -472,7 +638,7 @@ async function saveWO(){
     const{data,error:ie}=await sb.from("workouts").insert(payload).select("id").single();
     if(ie||!data){
       // Retry without workout_type if column doesn't exist
-      const p2={name:ew.name,rounds:ew.rounds,rest_between_rounds_seconds:ew.rbs||0};
+      const p2={name:ew.name,rounds:ew.rounds};
       const{data:d2,error:ie2}=await sb.from("workouts").insert(p2).select("id").single();
       if(ie2||!d2){toast("Помилка збереження: "+(ie2?.message||ie?.message||"невідома"));return;}
       wid=d2.id;
@@ -564,7 +730,7 @@ function rCmpGrid(field){
 }
 
 /* EXECUTION */
-function buildSeq(w){const seq=[];for(let r=0;r<w.rounds;r++){w.items.forEach(it=>{const occ=it.repeat_count||1;for(let o=0;o<occ;o++){seq.push({kind:"exercise",item:it,round:r+1});if(it.rest_after_seconds>0)seq.push({kind:"rest",seconds:it.rest_after_seconds,round:r+1});}});if(r<w.rounds-1&&(w.rest_between_rounds_seconds||0)>0)seq.push({kind:"rest_round",seconds:w.rest_between_rounds_seconds,round:r+1});}return seq;}
+function buildSeq(w){const seq=[];for(let r=0;r<w.rounds;r++){w.items.forEach(it=>{seq.push({kind:"exercise",item:it,round:r+1});if((it.rest_after_seconds||0)>0)seq.push({kind:"rest",seconds:it.rest_after_seconds,round:r+1});});}return seq;}
 function startExec(wo,sid){S.exec={workout:wo,sid,seq:buildSeq(wo),idx:0,remaining:0,paused:false,timer:null};document.getElementById("es").classList.add("shown");runStep();}
 function clearTimer(){if(S.exec.timer){clearInterval(S.exec.timer);S.exec.timer=null;}}
 function runStep(){const ex=S.exec;clearTimer();if(ex.idx>=ex.seq.length){finishExec();return;}const step=ex.seq[ex.idx];document.getElementById("es").classList.toggle("rest",step.kind!=="exercise");if(step.kind!=="exercise"||step.item.type==="time"){ex.remaining=step.kind!=="exercise"?step.seconds:step.item.duration_seconds;renderES(step);ex.timer=setInterval(()=>{if(ex.paused)return;ex.remaining--;updCD();if(ex.remaining<=0){ex.idx++;runStep();}},1000);}else renderES(step);}
